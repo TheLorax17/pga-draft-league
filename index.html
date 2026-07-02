@@ -1,70 +1,294 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PGA Draft League</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f5132, #06281a);
+      color: #1f2937;
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 18px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      color: #0f5132;
+    }
+
+    h2, h3, h4 {
+      color: #111827;
+    }
+
+    .subtitle {
+      margin-top: 0;
+      color: #6b7280;
+    }
+
+    input, button {
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    input {
+      padding: 12px;
+      border: 1px solid #d1d5db;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 12px 16px;
+      font-weight: 700;
+      background: #0f5132;
+      color: white;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      background: #0b3d26;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #login-box {
+      max-width: 430px;
+      margin: 12vh auto;
+      text-align: center;
+    }
+
+    #pin {
+      width: 100%;
+      margin: 18px 0 12px;
+      text-align: center;
+      letter-spacing: 6px;
+      font-size: 24px;
+    }
+
+    nav {
+      display: flex;
+      gap: 10px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .tab-btn:hover {
+      background: #d1d5db;
+    }
+
+    section {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 24px;
+    }
+
+    #csv-input {
+      width: 100%;
+      background: white;
+      margin: 10px 0;
+    }
+
+    #field-list,
+    #available-list,
+    #team-a-roster,
+    #team-b-roster {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #field-list {
+      columns: 3;
+      margin-top: 18px;
+    }
+
+    #field-list li,
+    #team-a-roster li,
+    #team-b-roster li {
+      background: white;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    #available-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+    }
+
+    #available-list button {
+      width: 100%;
+      background: white;
+      color: #0f5132;
+      border: 1px solid #bbf7d0;
+      text-align: left;
+    }
+
+    #available-list button:hover {
+      background: #dcfce7;
+    }
+
+    .draft-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 22px;
+    }
+
+    .team-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+    }
+
+    #turn-indicator {
+      background: #dcfce7;
+      color: #14532d;
+      padding: 14px 16px;
+      border-radius: 14px;
+    }
+
+    #reset-draft-btn {
+      background: #991b1b;
+      margin-bottom: 18px;
+    }
+
+    #status,
+    #upload-status {
+      font-weight: 700;
+      color: #0f5132;
+    }
+
+    @media (max-width: 700px) {
+      .card {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      #field-list {
+        columns: 1;
+      }
+
+      .draft-layout {
+        grid-template-columns: 1fr;
+      }
+
+      nav button {
+        flex: 1;
+      }
+    }
+  </style>
 </head>
+
 <body>
-  <div id="login-box">
-    <h1>PGA Draft League 🏌️</h1>
-    <input type="password" id="pin" placeholder="Enter PIN" maxlength="4" inputmode="numeric" />
-    <button id="login-btn">Enter</button>
-    <p id="status"></p>
-  </div>
+  <div class="page">
+    <div id="login-box" class="card">
+      <h1>PGA Draft League 🏌️</h1>
+      <p class="subtitle">Enter your league PIN to start drafting.</p>
+      <input type="password" id="pin" placeholder="PIN" maxlength="4" inputmode="numeric" />
+      <button id="login-btn">Enter League</button>
+      <p id="status"></p>
+    </div>
 
-  <div id="app-box" style="display: none;">
-    <h1>PGA Draft League 🏌️</h1>
+    <div id="app-box" class="card" style="display: none;">
+      <h1>PGA Draft League 🏌️</h1>
+      <p class="subtitle">Upload the field, run the draft, and track the week.</p>
 
-    <nav>
-      <button class="tab-btn" data-tab="field-section">Field</button>
-      <button class="tab-btn" data-tab="draft-section">Draft</button>
-      <button class="tab-btn" data-tab="scores-section">Scores</button>
-    </nav>
+      <nav>
+        <button class="tab-btn" data-tab="field-section">Field</button>
+        <button class="tab-btn" data-tab="draft-section">Draft</button>
+        <button class="tab-btn" data-tab="scores-section">Scores</button>
+      </nav>
 
-    <section id="field-section">
-      <h2>Tournament Field</h2>
-      <p>Upload a CSV with one golfer name per row (a header row like "name" is fine, it'll be skipped).</p>
-      <input type="file" id="csv-input" accept=".csv" />
-      <p id="upload-status"></p>
-      <ul id="field-list"></ul>
-    </section>
+      <section id="field-section">
+        <h2>Tournament Field</h2>
+        <p>Upload a CSV with one golfer name per row.</p>
+        <input type="file" id="csv-input" accept=".csv" />
+        <p id="upload-status"></p>
+        <ul id="field-list"></ul>
+      </section>
 
-    <section id="draft-section" style="display: none;">
-      <h2>Draft</h2>
+      <section id="draft-section" style="display: none;">
+        <h2>Draft Room</h2>
 
-      <div id="draft-setup">
-        <label>Golfers per team: <input type="number" id="roster-size" value="5" min="1" max="20" /></label><br/>
-        <button id="start-draft-btn">Flip Coin & Start Draft</button>
-      </div>
+        <div id="draft-setup">
+          <label>
+            Golfers per team:
+            <input type="number" id="roster-size" value="5" min="1" max="20" />
+          </label>
+          <br><br>
+          <button id="start-draft-btn">Flip Coin & Start Draft</button>
+        </div>
 
-      <div id="draft-board" style="display: none;">
-        <h3 id="turn-indicator"></h3>
-        <button id="reset-draft-btn">Reset Draft (new week)</button>
+        <div id="draft-board" style="display: none;">
+          <h3 id="turn-indicator"></h3>
+          <button id="reset-draft-btn">Reset Draft</button>
 
-        <h4>Available Golfers</h4>
-        <ul id="available-list"></ul>
+          <h4>Available Golfers</h4>
+          <ul id="available-list"></ul>
 
-        <div style="display:flex; gap: 40px;">
-          <div>
-            <h4 id="team-a-header"></h4>
-            <ul id="team-a-roster"></ul>
-          </div>
-          <div>
-            <h4 id="team-b-header"></h4>
-            <ul id="team-b-roster"></ul>
+          <div class="draft-layout">
+            <div class="team-card">
+              <h4 id="team-a-header"></h4>
+              <ul id="team-a-roster"></ul>
+            </div>
+
+            <div class="team-card">
+              <h4 id="team-b-header"></h4>
+              <ul id="team-b-roster"></ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="draft-complete" style="display: none;">
-        <h3>✅ Draft complete!</h3>
-      </div>
-    </section>
+        <div id="draft-complete" style="display: none;">
+          <h3>✅ Draft complete!</h3>
+        </div>
+      </section>
 
-    <section id="scores-section" style="display: none;">
-      <h2>Scores</h2>
-      <p>Coming soon.</p>
-    </section>
+      <section id="scores-section" style="display: none;">
+        <h2>Scores</h2>
+        <p>Coming soon.</p>
+      </section>
+    </div>
   </div>
 
   <script type="module">
@@ -75,7 +299,7 @@
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const auth = getAuth();
-    const CORRECT_PIN = "1999"; // your PIN
+    const CORRECT_PIN = "1999";
 
     document.getElementById("login-btn").addEventListener("click", async () => {
       const pin = document.getElementById("pin").value;
@@ -99,7 +323,6 @@
       }
     });
 
-    // --- Tab switching ---
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("section").forEach((s) => (s.style.display = "none"));
@@ -107,9 +330,8 @@
       });
     });
 
-    // --- Field / CSV upload ---
     const fieldCollection = collection(db, "tournaments", "current", "field");
-    let currentField = []; // [{id, name}]
+    let currentField = [];
 
     document.getElementById("csv-input").addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -149,11 +371,10 @@
           li.textContent = docSnap.data().name;
           list.appendChild(li);
         });
-        renderDraftBoard(); // field affects available list
+        renderDraftBoard();
       });
     }
 
-    // --- Draft ---
     const draftDocRef = doc(db, "draft", "current");
     let draftState = null;
 
@@ -192,21 +413,24 @@
       const totalPicks = picks.length;
       const totalNeeded = rosterSize * 2;
       if (totalPicks >= totalNeeded) return null;
+
       const round = Math.floor(totalPicks / 2);
       const posInRound = totalPicks % 2;
-      const picker = round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
-      return picker;
+      return round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
     }
 
     async function draftGolfer(golfer) {
       const picker = currentPicker();
       if (!picker) return;
+
       const freshSnap = await getDoc(draftDocRef);
       const fresh = freshSnap.data();
+
       if (fresh.picks.some((p) => p.playerId === golfer.id)) {
         alert("That golfer was just picked — try another.");
         return;
       }
+
       const newPicks = [...fresh.picks, { team: picker, playerId: golfer.id, playerName: golfer.name }];
       await updateDoc(draftDocRef, { picks: newPicks });
     }
@@ -244,6 +468,7 @@
 
       const availableList = document.getElementById("available-list");
       availableList.innerHTML = "";
+
       available.forEach((g) => {
         const li = document.createElement("li");
         const btn = document.createElement("button");
@@ -261,6 +486,7 @@
       const rosterB = document.getElementById("team-b-roster");
       rosterA.innerHTML = "";
       rosterB.innerHTML = "";
+
       draftState.picks.forEach((p) => {
         const li = document.createElement("li");
         li.textContent = p.playerName;
