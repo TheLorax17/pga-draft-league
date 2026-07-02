@@ -791,35 +791,34 @@
           <div class="section-header">
             <div>
               <h2>Scores Command Center</h2>
-              <p>Upload round data, sort by points, and click any golfer to open a full scorecard.</p>
-            </div>
-
-            <div class="upload-box">
-              <label>
-                Scores CSV
-                <input type="file" id="scores-input" accept=".csv" />
-              </label>
+              <p>Link a tournament, refresh drafted golfers, and click any golfer to open a full scorecard.</p>
             </div>
           </div>
 
           <p id="scores-status"></p>
 
           <div class="scores-upload-box">
-            <h3>Expected Score Sheet</h3>
-            <p>Recommended columns: Name, Position, Thru, Total, R1, R2, R3, R4, plus hole scores like R1H1 through R4H18. Points are currently calculated as the inverse of strokes to par, so -12 strokes = 12 points.</p>
+            <h3>Link This Week's Tournament</h3>
+            <p>Enter the tournId and year, then link it once per week before refreshing scores. Scores refresh only for drafted golfers.</p>
+            <div class="import-actions">
+              <input type="text" id="tourn-id-input" placeholder="tournId, e.g. 007" style="max-width:170px" />
+              <input type="text" id="tourn-year-input" placeholder="year, e.g. 2026" value="2026" style="max-width:140px" />
+              <button id="fetch-tournament-btn">Link Tournament</button>
+              <button id="refresh-scores-btn">Refresh Scores</button>
+            </div>
           </div>
 
           <div class="stat-grid">
             <div class="stat-card">
-              <span>Score Rows</span>
+              <span>Scored Golfers</span>
               <strong id="score-rows-count">0</strong>
             </div>
             <div class="stat-card">
-              <span>Team A Points</span>
+              <span>Chenny Points</span>
               <strong id="team-a-score">--</strong>
             </div>
             <div class="stat-card">
-              <span>Team B Points</span>
+              <span>Juice Points</span>
               <strong id="team-b-score">--</strong>
             </div>
             <div class="stat-card">
@@ -892,6 +891,232 @@
     const draftDocRef = doc(db, "draft", "current");
 
     const defaultPar = [4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4];
+
+    // RapidAPI / Live Golf Data setup.
+    // IMPORTANT: do not commit a real API key to a public GitHub repo.
+    // For quick testing, paste your key below. Long term, move this behind a tiny serverless function.
+    const RAPIDAPI_KEY = "PASTE_YOUR_RAPIDAPI_KEY_HERE";
+    const RAPIDAPI_HOST = "live-golf-data.p.rapidapi.com";
+    const tournamentMetaRef = doc(db, "tournaments", "current");
+
+    async function golfApiFetch(path, params) {
+      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "PASTE_YOUR_RAPIDAPI_KEY_HERE") {
+        throw new Error("Add your RapidAPI key in RAPIDAPI_KEY first.");
+      }
+
+      const query = new URLSearchParams(params).toString();
+      const url = `https://${RAPIDAPI_HOST}/${path}?${query}`;
+
+      const res = await fetch(url, {
+        headers: {
+          "x-rapidapi-key": RAPIDAPI_KEY,
+          "x-rapidapi-host": RAPIDAPI_HOST
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
+      }
+
+      return res.json();
+    }
+
+    function holePoints(strokes, par) {
+      const diff = Number(strokes) - Number(par);
+
+      if (Number.isNaN(diff)) return 0;
+      if (diff <= -3) return 13;
+      if (diff === -2) return 8;
+      if (diff === -1) return 3;
+      if (diff === 0) return 0;
+      if (diff === 1) return -1;
+      return -3;
+    }
+
+    function finishPoints(position) {
+      if (!position) return 0;
+
+      const rank = parseInt(String(position).replace("T", "").trim(), 10);
+      if (Number.isNaN(rank)) return 0;
+
+      if (rank === 1) return 30;
+      if (rank === 2) return 20;
+      if (rank === 3) return 18;
+      if (rank === 4) return 16;
+      if (rank === 5) return 14;
+      if (rank === 6) return 12;
+      if (rank === 7) return 10;
+      if (rank === 8) return 9;
+      if (rank === 9) return 8;
+      if (rank === 10) return 7;
+      if (rank <= 15) return 6;
+      if (rank <= 20) return 5;
+      if (rank <= 25) return 4;
+      if (rank <= 30) return 3;
+      if (rank <= 40) return 2;
+      if (rank <= 50) return 1;
+
+      return 0;
+    }
+
+    async function fetchTournamentInfo() {
+      const statusEl = document.getElementById("scores-status");
+      const tournId = document.getElementById("tourn-id-input").value.trim();
+      const year = document.getElementById("tourn-year-input").value.trim();
+
+      if (!tournId || !year) {
+        statusEl.textContent = "Enter tournId and year.";
+        return;
+      }
+
+      statusEl.textContent = "Linking tournament...";
+
+      try {
+        const data = await golfApiFetch("tournament", { orgId: "1", tournId, year });
+        const course = data.courses?.[0];
+        const coursePar = course ? course.holes.map((h) => parseInt(h.par, 10)) : [];
+
+        await setDoc(tournamentMetaRef, {
+          tournId,
+          year,
+          orgId: "1",
+          coursePar,
+          courseName: course?.courseName || "",
+          tournamentName: data.name || "",
+          lastFetched: new Date().toISOString()
+        }, { merge: true });
+
+        const fieldByNormalized = new Map();
+        currentField.forEach((g) => fieldByNormalized.set(g.normalizedName || normalizeName(g.name), g));
+
+        let matched = 0;
+        let missed = 0;
+
+        for (const p of (data.players || [])) {
+          const golfer = fieldByNormalized.get(normalizeName(`${p.firstName} ${p.lastName}`));
+
+          if (!golfer) {
+            missed++;
+            continue;
+          }
+
+          await updateDoc(doc(fieldCollection, golfer.id), {
+            playerId: p.playerId
+          });
+
+          matched++;
+        }
+
+        statusEl.textContent = `✅ Linked ${data.name || "tournament"}. Matched ${matched} players, missed ${missed}.`;
+      } catch (err) {
+        statusEl.textContent = "❌ " + err.message;
+      }
+    }
+
+    function getRoundScoreToPar(row, roundId) {
+      const round = row.rounds?.find((r) => Number(r.roundId) === Number(roundId));
+      return round?.scoreToPar || "";
+    }
+
+    async function refreshScores() {
+      const statusEl = document.getElementById("scores-status");
+      const metaSnap = await getDoc(tournamentMetaRef);
+
+      if (!metaSnap.exists() || !metaSnap.data().tournId) {
+        statusEl.textContent = "❌ Link a tournament first.";
+        return;
+      }
+
+      if (!draftState?.picks?.length) {
+        statusEl.textContent = "❌ No drafted golfers yet.";
+        return;
+      }
+
+      const { tournId, year, coursePar } = metaSnap.data();
+      statusEl.textContent = "Refreshing scores for drafted golfers...";
+
+      try {
+        const leaderboard = await golfApiFetch("leaderboard", { orgId: "1", tournId, year });
+        const rows = leaderboard.leaderboardRows || [];
+
+        const draftedIds = new Set(draftState.picks.map((p) => p.playerId));
+        const draftedGolfers = currentField.filter((g) => draftedIds.has(g.id) && g.playerId);
+
+        let refreshedCount = 0;
+
+        for (const golfer of draftedGolfers) {
+          const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
+          if (!row) continue;
+
+          const existingSnap = await getDoc(doc(fieldCollection, golfer.id));
+          const holesByRound = existingSnap.data()?.holesByRound || {};
+          const roundIds = (row.rounds || []).map((r) => r.roundId).filter((id) => id !== undefined && id !== null);
+
+          for (const roundId of roundIds) {
+            if (holesByRound[roundId]?.complete) continue;
+
+            const cardResp = await golfApiFetch("scorecard", {
+              orgId: "1",
+              tournId,
+              year,
+              playerId: golfer.playerId,
+              roundId
+            });
+
+            const card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
+            const holesObj = card?.holes || {};
+
+            let roundPoints = 0;
+            const holesArr = [];
+
+            for (let h = 1; h <= 18; h++) {
+              const hd = holesObj[String(h)];
+              const par = hd?.par ?? coursePar?.[h - 1] ?? defaultPar[h - 1];
+              const strokes = hd?.holeScore ?? null;
+              const pts = (strokes !== null && par !== null && par !== undefined) ? holePoints(strokes, par) : 0;
+
+              roundPoints += pts;
+              holesArr.push({
+                holeScore: strokes,
+                par,
+                points: pts
+              });
+            }
+
+            holesByRound[roundId] = {
+              holes: holesArr,
+              roundPoints,
+              complete: !!card?.roundComplete
+            };
+          }
+
+          const totalHolePoints = Object.values(holesByRound).reduce((sum, r) => sum + (r.roundPoints || 0), 0);
+          const finPts = finishPoints(row.position);
+          const totalPoints = totalHolePoints + finPts;
+
+          await updateDoc(doc(fieldCollection, golfer.id), {
+            position: row.position || "",
+            thru: row.thru || "",
+            totalScore: row.total || "",
+            r1: getRoundScoreToPar(row, 1),
+            r2: getRoundScoreToPar(row, 2),
+            r3: getRoundScoreToPar(row, 3),
+            r4: getRoundScoreToPar(row, 4),
+            holesByRound,
+            totalHolePoints,
+            finishPoints: finPts,
+            totalPoints
+          });
+
+          refreshedCount++;
+        }
+
+        statusEl.textContent = `✅ Refreshed ${refreshedCount} drafted golfers.`;
+      } catch (err) {
+        statusEl.textContent = "❌ " + err.message;
+      }
+    }
+
 
     let currentField = [];
     let draftState = null;
@@ -1250,7 +1475,12 @@
               r3: "",
               r4: "",
               totalScore: "",
-              holes: {}
+              holes: {},
+              holesByRound: {},
+              playerId: "",
+              totalHolePoints: 0,
+              finishPoints: 0,
+              totalPoints: null
             });
           }
 
@@ -1314,67 +1544,8 @@
       document.getElementById("odds-status").textContent = "";
     });
 
-    document.getElementById("scores-input").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          const rows = results.data;
-          let matched = 0;
-          let missed = 0;
-          const missedNames = [];
-
-          const fieldByNormalizedName = new Map();
-          currentField.forEach((golfer) => fieldByNormalizedName.set(normalizeName(golfer.name), golfer));
-
-          for (const row of rows) {
-            const name = getRowValue(row, ["Name", "Player", "Golfer"]);
-            if (!name) continue;
-
-            const matchedGolfer = fieldByNormalizedName.get(normalizeName(name));
-
-            if (!matchedGolfer) {
-              missed++;
-              missedNames.push(name);
-              continue;
-            }
-
-            const holes = {};
-            for (let round = 1; round <= 4; round++) {
-              holes[`r${round}`] = [];
-              for (let hole = 1; hole <= 18; hole++) {
-                holes[`r${round}`].push(getHoleValue(row, round, hole));
-              }
-            }
-
-            await updateDoc(doc(fieldCollection, matchedGolfer.id), {
-              position: getRowValue(row, ["Position", "Pos", "Place"]),
-              thru: getRowValue(row, ["Thru", "Through", "Holes"]),
-              r1: getRowValue(row, ["R1", "Round 1", "Round1"]),
-              r2: getRowValue(row, ["R2", "Round 2", "Round2"]),
-              r3: getRowValue(row, ["R3", "Round 3", "Round3"]),
-              r4: getRowValue(row, ["R4", "Round 4", "Round4"]),
-              totalScore: getRowValue(row, ["Total", "Score", "To Par", "Total Score", "Strokes"]),
-              holes
-            });
-
-            matched++;
-          }
-
-          let message = `✅ Scores uploaded. Matched ${matched}. Missed ${missed}.`;
-
-          if (missedNames.length) {
-            message += ` Missed: ${missedNames.slice(0, 8).join(", ")}`;
-            if (missedNames.length > 8) message += `, and ${missedNames.length - 8} more`;
-          }
-
-          document.getElementById("scores-status").textContent = message;
-        }
-      });
-    });
+    document.getElementById("fetch-tournament-btn").addEventListener("click", fetchTournamentInfo);
+    document.getElementById("refresh-scores-btn").addEventListener("click", refreshScores);
 
     fieldSearchInput.addEventListener("input", renderFieldTable);
     scoresSearchInput.addEventListener("input", renderScoresTable);
@@ -1400,7 +1571,13 @@
             r3: docSnap.data().r3 || "",
             r4: docSnap.data().r4 || "",
             totalScore: docSnap.data().totalScore || "",
-            holes: docSnap.data().holes || {}
+            holes: docSnap.data().holes || {},
+            holesByRound: docSnap.data().holesByRound || {},
+            playerId: docSnap.data().playerId || "",
+            normalizedName: docSnap.data().normalizedName || normalizeName(docSnap.data().name),
+            totalHolePoints: docSnap.data().totalHolePoints || 0,
+            finishPoints: docSnap.data().finishPoints || 0,
+            totalPoints: docSnap.data().totalPoints ?? null
           });
         });
 
@@ -1453,8 +1630,8 @@
       const filtered = currentField
         .filter((g) => g.name.toLowerCase().includes(search))
         .sort((a, b) => {
-          const aPoints = pointsFromStrokes(a.totalScore);
-          const bPoints = pointsFromStrokes(b.totalScore);
+          const aPoints = a.totalPoints ?? null;
+          const bPoints = b.totalPoints ?? null;
 
           if (aPoints === null && bPoints === null) return lastNameKey(a.name).localeCompare(lastNameKey(b.name));
           if (aPoints === null) return 1;
@@ -1471,7 +1648,7 @@
 
       filtered.forEach((g) => {
         const team = getPlayerTeam(g.id);
-        const points = pointsFromStrokes(g.totalScore);
+        const points = g.totalPoints ?? null;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -1528,7 +1705,7 @@
 
       draftState.picks.forEach((pick) => {
         const golfer = currentField.find((g) => g.id === pick.playerId);
-        const points = golfer ? pointsFromStrokes(golfer.totalScore) : null;
+        const points = golfer ? (golfer.totalPoints ?? null) : null;
 
         if (!teamPoints[pick.team]) teamPoints[pick.team] = 0;
         if (points !== null) teamPoints[pick.team] += points;
@@ -1574,38 +1751,34 @@
       if (!activeScorecardGolfer) return;
 
       const golfer = activeScorecardGolfer;
-      const roundKey = `r${activeScorecardRound}`;
-      const scores = golfer.holes?.[roundKey] || [];
+      const roundData = golfer.holesByRound?.[activeScorecardRound];
+      const holes = roundData?.holes || [];
 
       document.getElementById("modal-player-name").textContent = golfer.name;
       document.getElementById("modal-player-summary").textContent =
-        `Position: ${golfer.position || "--"} | Strokes: ${golfer.totalScore || "--"} | Points: ${formatPoints(pointsFromStrokes(golfer.totalScore))}`;
+        `Position: ${golfer.position || "--"} | Total: ${golfer.totalScore || "--"} | Points: ${formatPoints(golfer.totalPoints)}`;
 
-      document.getElementById("scorecard-content").innerHTML = `
-        ${renderNineTable(1, 9, scores)}
-        ${renderNineTable(10, 18, scores)}
-      `;
+      document.getElementById("scorecard-content").innerHTML =
+        renderNineTable(1, 9, holes) + renderNineTable(10, 18, holes);
     }
 
-    function renderNineTable(startHole, endHole, scores) {
-      const holes = [];
-      for (let i = startHole; i <= endHole; i++) holes.push(i);
+    function renderNineTable(startHole, endHole, holes) {
+      const range = [];
+      for (let i = startHole; i <= endHole; i++) range.push(i);
 
-      const parTotal = holes.reduce((sum, hole) => sum + defaultPar[hole - 1], 0);
-      const scoreTotal = holes.reduce((sum, hole) => {
-        const value = Number(scores[hole - 1]);
-        return Number.isNaN(value) ? sum : sum + value;
-      }, 0);
+      const parTotal = range.reduce((sum, h) => sum + (holes[h - 1]?.par || defaultPar[h - 1] || 0), 0);
+      const scoreTotal = range.reduce((sum, h) => sum + (holes[h - 1]?.holeScore || 0), 0);
 
-      const scoreCells = holes.map((hole) => {
-        const score = scores[hole - 1] || "--";
-        const par = defaultPar[hole - 1];
-        const numScore = Number(score);
+      const scoreCells = range.map((h) => {
+        const hole = holes[h - 1];
+        const score = hole?.holeScore ?? "--";
+        const par = hole?.par ?? defaultPar[h - 1];
+
         let cls = "";
 
-        if (!Number.isNaN(numScore)) {
-          if (numScore < par) cls = "score-good";
-          if (numScore > par) cls = "score-bad";
+        if (hole?.holeScore !== null && hole?.holeScore !== undefined && par !== null && par !== undefined) {
+          if (hole.holeScore < par) cls = "score-good";
+          if (hole.holeScore > par) cls = "score-bad";
         }
 
         return `<td class="${cls}">${score}</td>`;
@@ -1616,21 +1789,21 @@
           <table class="scorecard-table">
             <colgroup>
               <col style="width:82px">
-              ${holes.map(() => `<col>`).join("")}
+              ${range.map(() => `<col>`).join("")}
               <col style="width:82px">
             </colgroup>
             <thead>
               <tr>
                 <th>Hole</th>
-                ${holes.map((hole) => `<th>${hole}</th>`).join("")}
+                ${range.map((h) => `<th>${h}</th>`).join("")}
                 <th>Total</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>Par</td>
-                ${holes.map((hole) => `<td>${defaultPar[hole - 1]}</td>`).join("")}
-                <td>${parTotal}</td>
+                ${range.map((h) => `<td>${holes[h - 1]?.par ?? defaultPar[h - 1] ?? "--"}</td>`).join("")}
+                <td>${parTotal || "--"}</td>
               </tr>
               <tr>
                 <td>R${activeScorecardRound}</td>
