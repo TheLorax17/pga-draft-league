@@ -920,13 +920,13 @@
     // RapidAPI / Live Golf Data setup.
     // IMPORTANT: do not commit a real API key to a public GitHub repo.
     // For quick testing, paste your key below. Long term, move this behind a tiny serverless function.
-    const RAPIDAPI_KEY = "82ae611ae5msh87caa3b40d17bedp15cd62jsn60ae1312f759";
+    const RAPIDAPI_KEY = "PASTE_YOUR_RAPIDAPI_KEY_HERE";
     const RAPIDAPI_HOST = "live-golf-data.p.rapidapi.com";
     const tournamentMetaRef = doc(db, "tournaments", "current");
     let scheduleEvents = [];
 
     async function golfApiFetch(path, params) {
-      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "82ae611ae5msh87caa3b40d17bedp15cd62jsn60ae1312f759") {
+      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "PASTE_YOUR_RAPIDAPI_KEY_HERE") {
         throw new Error("Add your RapidAPI key in RAPIDAPI_KEY first.");
       }
 
