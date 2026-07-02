@@ -3,7 +3,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gsta
 import { collection, doc, setDoc, updateDoc, getDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const CORRECT_PIN = "1999";
-const RAPIDAPI_KEY = "PASTE_YOUR_RAPIDAPI_KEY_HERE";
+const RAPIDAPI_KEY = "82ae611ae5msh87caa3b40d17bedp15cd62jsn60ae1312f759";
 const RAPIDAPI_HOST = "live-golf-data.p.rapidapi.com";
 
 const auth = getAuth();
