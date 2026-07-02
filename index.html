@@ -4,2091 +4,250 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PGA Degens</title>
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    :root {
-      --bg-0: #111713;
-      --bg-1: #171f1a;
-      --bg-2: #202922;
-      --panel: #1b231e;
-      --panel-2: #222c25;
-      --text: #e8eee9;
-      --muted: #9aa89f;
-      --border: #354139;
-      --green: #82a856;
-      --green-bright: #a6d96a;
-      --amber: #d7a441;
-      --danger: #a33a32;
-      --black: #090d0a;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(130,168,86,.18), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(215,164,65,.10), transparent 30%),
-        linear-gradient(135deg, #0b100d, #18211b 55%, #111713);
-      color: var(--text);
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-      background-size: 34px 34px;
-      mask-image: linear-gradient(to bottom, black, transparent 85%);
-    }
-
-    button, input, textarea { font: inherit; }
-
-    button {
-      border: 1px solid rgba(166,217,106,.35);
-      cursor: pointer;
-      border-radius: 6px;
-      padding: 12px 16px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      background: linear-gradient(180deg, #6f9249, #4f6f35);
-      color: #f4ffe9;
-    }
-
-    button:hover { background: linear-gradient(180deg, #8aad5d, #5d7f3e); }
-
-    button:disabled {
-      opacity: .45;
-      cursor: not-allowed;
-    }
-
-    input, textarea {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 12px 14px;
-      background: #121914;
-      color: var(--text);
-    }
-
-    input::placeholder, textarea::placeholder { color: #7d8a82; }
-
-    textarea {
-      width: 100%;
-      min-height: 180px;
-      resize: vertical;
-      line-height: 1.4;
-    }
-
-    .page {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 28px 18px;
-      position: relative;
-      z-index: 1;
-    }
-
-    #login-box {
-      max-width: 440px;
-      margin: 12vh auto;
-      padding: 32px;
-      text-align: center;
-      background: linear-gradient(180deg, var(--panel-2), var(--panel));
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: 0 24px 70px rgba(0,0,0,.45);
-    }
-
-    #login-box h1 {
-      color: var(--green-bright);
-      margin: 0 0 8px;
-      font-size: 34px;
-    }
-
-    #login-box p { color: var(--muted); }
-
-    #pin {
-      width: 100%;
-      margin: 18px 0 12px;
-      text-align: center;
-      font-size: 24px;
-      letter-spacing: 7px;
-    }
-
-    #login-btn { width: 100%; }
-
-    .shell {
-      background: rgba(18,25,20,.96);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 24px 70px rgba(0,0,0,.48);
-      overflow: hidden;
-    }
-
-    .topbar {
-      padding: 30px;
-      background:
-        linear-gradient(90deg, rgba(9,13,10,.94), rgba(31,44,35,.96)),
-        repeating-linear-gradient(135deg, rgba(166,217,106,.08) 0, rgba(166,217,106,.08) 1px, transparent 1px, transparent 12px);
-      color: white;
-      border-bottom: 1px solid var(--border);
-      position: relative;
-    }
-
-    .topbar::after {
-      content: "LIVE DEGEN SYSTEM";
-      position: absolute;
-      right: 28px;
-      top: 28px;
-      color: var(--amber);
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .12em;
-    }
-
-    .topbar h1 {
-      margin: 0;
-      font-size: 40px;
-      letter-spacing: -.05em;
-      color: #f1f6ef;
-    }
-
-    .topbar p {
-      margin: 8px 0 0;
-      color: var(--muted);
-    }
-
-    .content { padding: 24px; }
-
-    nav {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      background: #161f19;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .tab-btn:hover {
-      background: #223026;
-      color: var(--green-bright);
-    }
-
-    section {
-      background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 22px;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .section-header h2 {
-      margin: 0 0 6px;
-      font-size: 26px;
-      color: var(--text);
-    }
-
-    .section-header p {
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .upload-box {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .upload-box label {
-      color: var(--muted);
-      font-weight: 800;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .odds-import-box,
-    .scores-upload-box {
-      background: #151d18;
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--amber);
-      border-radius: 10px;
-      padding: 18px;
-      margin: 18px 0;
-    }
-
-    .odds-import-box h3,
-    .scores-upload-box h3 {
-      margin: 0 0 8px;
-      color: var(--amber);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-
-    .odds-import-box p,
-    .scores-upload-box p {
-      color: var(--muted);
-      margin: 0 0 12px;
-    }
-
-    .import-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-      align-items: center;
-    }
-
-    select {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 12px 14px;
-      background: #121914;
-      color: var(--text);
-      font: inherit;
-      min-width: 260px;
-    }
-
-    .linked-tournament {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border: 1px solid rgba(166,217,106,.35);
-      border-radius: 8px;
-      background: rgba(130,168,86,.12);
-      color: var(--green-bright);
-      font-weight: 900;
-    }
-
-    #clear-odds-btn {
-      background: linear-gradient(180deg, #4b5563, #303740);
-      border-color: #56616d;
-    }
-
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin: 18px 0;
-      width: 100%;
-    }
-
-    .stat-card {
-      background: linear-gradient(180deg, #202a23, #161f19);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 4px;
-      background: var(--green);
-    }
-
-    .stat-card span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-
-    .stat-card strong {
-      display: block;
-      margin-top: 8px;
-      font-size: 28px;
-      color: var(--green-bright);
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 18px 0;
-    }
-
-    .toolbar input {
-      min-width: 260px;
-      flex: 1;
-    }
-
-    .pill {
-      display: inline-flex;
-      padding: 8px 11px;
-      border-radius: 999px;
-      background: #121914;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      border-radius: 10px;
-      background: #121914;
-      border: 1px solid var(--border);
-      width: 100%;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 980px;
-    }
-
-    th {
-      background: #0b100d;
-      color: var(--green-bright);
-      text-align: left;
-      padding: 14px 16px;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      white-space: nowrap;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    th.sortable:hover {
-      color: var(--amber);
-    }
-
-    th.sortable::after {
-      content: " ↕";
-      color: var(--muted);
-      font-size: 10px;
-    }
-
-    th.sortable.sorted-asc::after {
-      content: " ↑";
-      color: var(--amber);
-    }
-
-    th.sortable.sorted-desc::after {
-      content: " ↓";
-      color: var(--amber);
-    }
-
-    td {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(53,65,57,.75);
-      color: var(--text);
-      vertical-align: middle;
-    }
-
-    tbody tr:hover { background: rgba(130,168,86,.08); }
-
-    .golfer-name {
-      font-weight: 900;
-      color: #f2f7f2;
-    }
-
-    .score-click {
-      cursor: pointer;
-      text-decoration: underline;
-      text-decoration-color: rgba(166,217,106,.35);
-      text-underline-offset: 3px;
-    }
-
-    .muted-cell {
-      color: #77857d;
-      font-style: italic;
-    }
-
-    .odds,
-    .score-good {
-      font-weight: 900;
-      color: var(--green-bright);
-    }
-
-    .score-bad {
-      font-weight: 900;
-      color: #ff7b72;
-    }
-
-    .rank-badge {
-      display: inline-block;
-      padding: 6px 9px;
-      border-radius: 999px;
-      background: rgba(215,164,65,.16);
-      color: var(--amber);
-      border: 1px solid rgba(215,164,65,.35);
-      font-weight: 900;
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-
-    .draft-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, .45fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .available-panel, .teams-panel, .draft-setup-card {
-      background: #151d18;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-    }
-
-    #team-a-roster, #team-b-roster {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .draft-table {
-      min-width: 0;
-      table-layout: fixed;
-    }
-
-    .draft-table th:last-child,
-    .draft-table td:last-child {
-      width: 110px;
-      text-align: right;
-    }
-
-    .draft-pick-btn {
-      width: 100%;
-      text-align: left;
-      background: #111713;
-      color: var(--green-bright);
-      border: 1px solid var(--border);
-      text-transform: none;
-      letter-spacing: 0;
-      padding: 10px 12px;
-    }
-
-    .draft-pick-btn:hover {
-      border-color: var(--green-bright);
-      background: #1d2a20;
-    }
-
-    .draft-pick-btn:disabled {
-      opacity: .45;
-    }
-
-    .team-card {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 14px;
-      background: #111713;
-    }
-
-    .team-card h4 {
-      margin: 0 0 12px;
-      color: var(--amber);
-      text-transform: uppercase;
-      letter-spacing: .05em;
-    }
-
-    .team-card li {
-      background: #1a231d;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      font-weight: 800;
-      color: var(--text);
-    }
-
-    #turn-indicator {
-      background: rgba(130,168,86,.16);
-      color: var(--green-bright);
-      padding: 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(166,217,106,.35);
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    #reset-draft-btn {
-      background: linear-gradient(180deg, #a33a32, #762720);
-      border-color: #bd5148;
-    }
-
-    #status, #upload-status, #odds-status, #scores-status {
-      font-weight: 900;
-      color: var(--green-bright);
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.72);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      z-index: 20;
-    }
-
-    .modal {
-      width: min(1040px, 100%);
-      max-height: 92vh;
-      overflow-y: auto;
-      background: linear-gradient(180deg, var(--panel-2), var(--panel));
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: 0 24px 70px rgba(0,0,0,.6);
-      padding: 20px;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-      margin-bottom: 16px;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      color: var(--green-bright);
-    }
-
-    .round-tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 14px 0;
-    }
-
-    .round-tab {
-      background: #111713;
-      color: var(--text);
-      border-color: var(--border);
-    }
-
-    .round-tab.active {
-      background: linear-gradient(180deg, #6f9249, #4f6f35);
-      color: #f4ffe9;
-      border-color: rgba(166,217,106,.65);
-    }
-
-    .scorecard-nine {
-      margin-top: 14px;
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
-
-    .scorecard-table {
-      width: 100%;
-      min-width: 0;
-      table-layout: fixed;
-    }
-
-    .scorecard-table th,
-    .scorecard-table td {
-      text-align: center;
-      padding: 12px 10px;
-    }
-
-    .scorecard-table th:first-child,
-    .scorecard-table td:first-child {
-      text-align: left;
-      color: var(--amber);
-      font-weight: 900;
-      text-transform: uppercase;
-      width: 82px;
-    }
-
-    .scorecard-table th:last-child,
-    .scorecard-table td:last-child {
-      width: 82px;
-    }
-
-    .draft-table {
-      min-width: 0 !important;
-    }
-
-    .scorecard-table {
-      min-width: 0 !important;
-    }
-
-    @media (max-width: 850px) {
-      .topbar::after {
-        position: static;
-        display: block;
-        margin-top: 12px;
-      }
-
-      .stat-grid, .draft-layout {
-        grid-template-columns: 1fr;
-      }
-
-      .toolbar input {
-        min-width: 100%;
-      }
-
-      nav button {
-        flex: 1;
-      }
-    }
-  </style>
 </head>
 
 <body>
-  <div class="page">
-    <div id="login-box">
+  <div class="grid-bg"></div>
+
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="status-chip">Secure League Access</div>
       <h1>PGA Degens 💸</h1>
-      <p>Enter your league PIN to start drafting.</p>
-      <input type="password" id="pin" placeholder="PIN" maxlength="4" inputmode="numeric" />
-      <button id="login-btn">Enter League</button>
-      <p id="status"></p>
-    </div>
-
-    <div id="app-box" class="shell" style="display: none;">
-      <header class="topbar">
-        <h1>PGA Degens 💸</h1>
-        <p>Upload the field, paste odds, draft your teams, and track live scores.</p>
-      </header>
-
-      <main class="content">
-        <nav>
-          <button class="tab-btn" data-tab="field-section">Field</button>
-          <button class="tab-btn" data-tab="draft-section">Draft</button>
-          <button class="tab-btn" data-tab="scores-section">Scores</button>
-        </nav>
-
-        <section id="field-section">
-          <div class="section-header">
-            <div>
-              <h2>Tournament Field</h2>
-              <p>Upload your golfer list first, then paste DraftKings odds text.</p>
-            </div>
-
-            <div class="upload-box">
-              <label>
-                Field CSV
-                <input type="file" id="csv-input" accept=".csv" />
-              </label>
-            </div>
-          </div>
-
-          <p id="upload-status"></p>
-
-          <div class="odds-import-box">
-            <h3>Paste DraftKings Odds</h3>
-            <p>Paste player name, outright, top 5, and top 10 odds.</p>
-            <textarea id="dk-odds-text" placeholder="Paste DraftKings odds text here..."></textarea>
-            <div class="import-actions">
-              <button id="import-odds-btn">Import Odds</button>
-              <button id="clear-odds-btn">Clear Odds Box</button>
-            </div>
-            <p id="odds-status"></p>
-          </div>
-
-          <div class="stat-grid">
-            <div class="stat-card">
-              <span>Total Golfers</span>
-              <strong id="total-golfers">0</strong>
-            </div>
-            <div class="stat-card">
-              <span>Odds Added</span>
-              <strong id="odds-count">0</strong>
-            </div>
-            <div class="stat-card">
-              <span>Drafted</span>
-              <strong id="drafted-count">0</strong>
-            </div>
-            <div class="stat-card">
-              <span>Available</span>
-              <strong id="available-count">0</strong>
-            </div>
-          </div>
-
-          <div class="toolbar">
-            <input type="search" id="field-search" placeholder="Search golfers..." />
-            <span class="pill">Sorted by last name</span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th class="sortable field-sort" data-sort="name">Golfer</th>
-                  <th class="sortable field-sort" data-sort="winOdds">Win</th>
-                  <th class="sortable field-sort" data-sort="top5Odds">Top 5</th>
-                  <th class="sortable field-sort" data-sort="top10Odds">Top 10</th>
-                  <th class="sortable field-sort" data-sort="bestFinish">Best Finish This Year</th>
-                  <th class="sortable field-sort" data-sort="top10s">Top 10s</th>
-                  <th class="sortable field-sort" data-sort="status">Status</th>
-                  <th class="sortable field-sort" data-sort="notes">Notes</th>
-                </tr>
-              </thead>
-              <tbody id="field-list"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section id="draft-section" style="display: none;">
-          <h2>Draft Room</h2>
-
-          <div id="draft-setup" class="draft-setup-card">
-            <label>
-              Golfers per team:
-              <input type="number" id="roster-size" value="5" min="1" max="20" />
-            </label>
-            <br><br>
-            <button id="start-draft-btn">Flip Coin & Start Draft</button>
-          </div>
-
-          <div id="draft-board" style="display: none;">
-            <h3 id="turn-indicator"></h3>
-            <button id="reset-draft-btn">Reset Draft</button>
-            <br><br>
-
-            <div class="draft-layout">
-              <div class="available-panel">
-                <h3>Available Golfers</h3>
-                <div class="table-wrap">
-                  <table class="draft-table">
-                    <thead>
-                      <tr>
-                        <th class="sortable draft-sort" data-sort="name">Golfer</th>
-                        <th>Pick</th>
-                      </tr>
-                    </thead>
-                    <tbody id="available-list"></tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="teams-panel">
-                <div class="team-card">
-                  <h4 id="team-a-header"></h4>
-                  <ul id="team-a-roster"></ul>
-                </div>
-
-                <div class="team-card">
-                  <h4 id="team-b-header"></h4>
-                  <ul id="team-b-roster"></ul>
-                </div>
-
-                <div id="draft-complete" style="display: none;">
-                  <h3>✅ Draft complete!</h3>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="scores-section" style="display: none;">
-          <div class="section-header">
-            <div>
-              <h2>Scores Command Center</h2>
-              <p>Link a tournament, refresh drafted golfers, and click any golfer to open a full scorecard.</p>
-            </div>
-          </div>
-
-          <p id="scores-status"></p>
-
-          <div class="scores-upload-box">
-            <h3>Link This Week's Tournament</h3>
-            <p>Load the PGA Tour schedule, pick the event, then refresh only the drafted golfers.</p>
-            <div class="import-actions">
-              <input type="text" id="tourn-year-input" placeholder="year, e.g. 2026" value="2026" style="max-width:140px" />
-              <button id="load-schedule-btn">Load Schedule</button>
-              <select id="tournament-select">
-                <option value="">Load schedule first...</option>
-              </select>
-              <button id="fetch-tournament-btn">Link Selected Tournament</button>
-              <button id="refresh-scores-btn">Refresh Scores</button>
-            </div>
-            <div id="linked-tournament-box" class="linked-tournament" style="display:none;"></div>
-          </div>
-
-          <div class="stat-grid">
-            <div class="stat-card">
-              <span>Scored Golfers</span>
-              <strong id="score-rows-count">0</strong>
-            </div>
-            <div class="stat-card">
-              <span>Chenny Points</span>
-              <strong id="team-a-score">--</strong>
-            </div>
-            <div class="stat-card">
-              <span>Juice Points</span>
-              <strong id="team-b-score">--</strong>
-            </div>
-            <div class="stat-card">
-              <span>Leader</span>
-              <strong id="score-leader">--</strong>
-            </div>
-          </div>
-
-          <div class="toolbar">
-            <input type="search" id="scores-search" placeholder="Search scores..." />
-            <span class="pill">Sorted by points</span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Golfer</th>
-                  <th>Position</th>
-                  <th>Thru</th>
-                  <th>R1</th>
-                  <th>R2</th>
-                  <th>R3</th>
-                  <th>R4</th>
-                  <th>Strokes</th>
-                  <th>Points</th>
-                  <th>Team</th>
-                </tr>
-              </thead>
-              <tbody id="scores-list"></tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+      <p>Enter the league PIN to access the board.</p>
+      <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="PIN" />
+      <button id="login-btn">Enter</button>
+      <p id="login-status" class="status-text"></p>
     </div>
   </div>
 
-  <div id="scorecard-modal" class="modal-backdrop">
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div>
+        <div class="status-chip">Live Degen System</div>
+        <h1>PGA Degens 💸</h1>
+        <p id="tournament-label">Field, draft, and scoring command center.</p>
+      </div>
+
+      <div class="top-actions">
+        <button class="ghost-btn" id="refresh-all-btn">Refresh Scores</button>
+      </div>
+    </header>
+
+    <section class="dashboard">
+      <div class="metric-card">
+        <span>Total Field</span>
+        <strong id="metric-field">0</strong>
+      </div>
+      <div class="metric-card">
+        <span>Drafted</span>
+        <strong id="metric-drafted">0</strong>
+      </div>
+      <div class="metric-card">
+        <span>Chenny</span>
+        <strong id="metric-team-a">--</strong>
+      </div>
+      <div class="metric-card">
+        <span>Juice</span>
+        <strong id="metric-team-b">--</strong>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="field">Field</button>
+      <button class="tab" data-tab="draft">Draft</button>
+      <button class="tab" data-tab="scores">Scores</button>
+    </nav>
+
+    <main>
+      <section id="field-tab" class="panel tab-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Field Board</h2>
+            <p>Upload golfers, paste DraftKings odds, then sort and search the board.</p>
+          </div>
+
+          <label class="file-btn">
+            Field CSV
+            <input type="file" id="field-csv" accept=".csv" />
+          </label>
+        </div>
+
+        <div class="odds-box">
+          <h3>DraftKings Odds Import</h3>
+          <p>Paste text with player name, win odds, top 5 odds, and top 10 odds.</p>
+          <textarea id="odds-text" placeholder="Ben Griffin&#10;+1325&#10;+285&#10;+150"></textarea>
+
+          <div class="row-actions">
+            <button id="import-odds-btn">Import Odds</button>
+            <button class="ghost-btn" id="clear-odds-btn">Clear</button>
+          </div>
+
+          <p id="field-status" class="status-text"></p>
+        </div>
+
+        <div class="toolbar">
+          <input type="search" id="field-search" placeholder="Search golfers..." />
+          <span class="pill">Click headers to sort</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable" data-table="field" data-key="name">Golfer</th>
+                <th class="sortable" data-table="field" data-key="winOdds">Win</th>
+                <th class="sortable" data-table="field" data-key="top5Odds">Top 5</th>
+                <th class="sortable" data-table="field" data-key="top10Odds">Top 10</th>
+                <th class="sortable" data-table="field" data-key="status">Status</th>
+                <th class="sortable" data-table="field" data-key="points">Points</th>
+              </tr>
+            </thead>
+            <tbody id="field-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="draft-tab" class="panel tab-panel hidden">
+        <div class="panel-header">
+          <div>
+            <h2>Draft Room</h2>
+            <p>Compact snake draft. Players stay sorted by last name unless you change the sort.</p>
+          </div>
+        </div>
+
+        <div id="draft-setup" class="draft-setup">
+          <label>
+            Golfers per team
+            <input type="number" id="roster-size" value="5" min="1" max="20" />
+          </label>
+
+          <button id="start-draft-btn">Flip Coin & Start Draft</button>
+        </div>
+
+        <div id="draft-board" class="draft-grid hidden">
+          <section class="subpanel">
+            <h3 id="turn-label">Draft Room</h3>
+            <button class="danger-btn" id="reset-draft-btn">Reset Draft</button>
+
+            <div class="table-wrap compact">
+              <table class="compact-table">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-table="draft" data-key="name">Golfer</th>
+                    <th>Pick</th>
+                  </tr>
+                </thead>
+                <tbody id="draft-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="teams">
+            <div class="team-card">
+              <h3 id="team-a-title">Chenny</h3>
+              <ul id="team-a-list"></ul>
+            </div>
+
+            <div class="team-card">
+              <h3 id="team-b-title">Juice</h3>
+              <ul id="team-b-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="scores-tab" class="panel tab-panel hidden">
+        <div class="panel-header">
+          <div>
+            <h2>Scores Command Center</h2>
+            <p>Load the schedule, link the tournament, then refresh drafted golfers.</p>
+          </div>
+        </div>
+
+        <div class="api-box">
+          <h3>Live Golf Data</h3>
+          <p>Replace the API key placeholder in <code>app.js</code>, then use this panel.</p>
+
+          <div class="api-controls">
+            <input type="text" id="schedule-year" value="2026" placeholder="Year" />
+            <button id="load-schedule-btn">Load Schedule</button>
+
+            <select id="tournament-select">
+              <option value="">Load schedule first...</option>
+            </select>
+
+            <button id="link-tournament-btn">Link Selected Tournament</button>
+            <button id="refresh-scores-btn">Refresh Scores</button>
+          </div>
+
+          <div id="linked-tournament" class="linked hidden"></div>
+          <p id="scores-status" class="status-text"></p>
+        </div>
+
+        <div class="toolbar">
+          <input type="search" id="scores-search" placeholder="Search scores..." />
+          <span class="pill">Leaderboard sorted by points</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Golfer</th>
+                <th>Pos</th>
+                <th>Thru</th>
+                <th>R1</th>
+                <th>R2</th>
+                <th>R3</th>
+                <th>R4</th>
+                <th>Strokes</th>
+                <th>Points</th>
+                <th>Team</th>
+              </tr>
+            </thead>
+            <tbody id="scores-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="confirm-modal" class="modal-backdrop hidden">
+    <div class="modal small">
+      <h2 id="confirm-title">Confirm Pick</h2>
+      <p id="confirm-copy"></p>
+
+      <div class="modal-actions">
+        <button class="ghost-btn" id="cancel-pick-btn">Cancel</button>
+        <button id="confirm-pick-btn">Draft</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="scorecard-modal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-header">
         <div>
-          <h2 id="modal-player-name">Scorecard</h2>
-          <p id="modal-player-summary" class="muted-cell"></p>
+          <h2 id="scorecard-title">Scorecard</h2>
+          <p id="scorecard-summary"></p>
         </div>
-        <button id="close-scorecard-btn">Close</button>
+
+        <button class="ghost-btn" id="close-scorecard-btn">Close</button>
       </div>
 
       <div class="round-tabs">
-        <button class="round-tab active" data-round="1">Round 1</button>
-        <button class="round-tab" data-round="2">Round 2</button>
-        <button class="round-tab" data-round="3">Round 3</button>
-        <button class="round-tab" data-round="4">Round 4</button>
+        <button class="round-tab active" data-round="1">R1</button>
+        <button class="round-tab" data-round="2">R2</button>
+        <button class="round-tab" data-round="3">R3</button>
+        <button class="round-tab" data-round="4">R4</button>
       </div>
 
       <div id="scorecard-content"></div>
     </div>
   </div>
 
-  <script type="module">
-    import { db } from "./firebase-config.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { collection, doc, setDoc, updateDoc, getDoc, getDocs, deleteDoc, onSnapshot }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const auth = getAuth();
-    const CORRECT_PIN = "1999";
-
-    const fieldCollection = collection(db, "tournaments", "current", "field");
-    const draftDocRef = doc(db, "draft", "current");
-
-    const defaultPar = [4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4];
-
-    // RapidAPI / Live Golf Data setup.
-    // IMPORTANT: do not commit a real API key to a public GitHub repo.
-    // For quick testing, paste your key below. Long term, move this behind a tiny serverless function.
-    const RAPIDAPI_KEY = "PASTE_YOUR_RAPIDAPI_KEY_HERE";
-    const RAPIDAPI_HOST = "live-golf-data.p.rapidapi.com";
-    const tournamentMetaRef = doc(db, "tournaments", "current");
-    let scheduleEvents = [];
-
-    async function golfApiFetch(path, params) {
-      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "PASTE_YOUR_RAPIDAPI_KEY_HERE") {
-        throw new Error("Add your RapidAPI key in RAPIDAPI_KEY first.");
-      }
-
-      const query = new URLSearchParams(params).toString();
-      const url = `https://${RAPIDAPI_HOST}/${path}?${query}`;
-
-      const res = await fetch(url, {
-        headers: {
-          "x-rapidapi-key": RAPIDAPI_KEY,
-          "x-rapidapi-host": RAPIDAPI_HOST
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
-      }
-
-      return res.json();
-    }
-
-    function holePoints(strokes, par) {
-      const diff = Number(strokes) - Number(par);
-
-      if (Number.isNaN(diff)) return 0;
-      if (diff <= -3) return 13;
-      if (diff === -2) return 8;
-      if (diff === -1) return 3;
-      if (diff === 0) return 0;
-      if (diff === 1) return -1;
-      return -3;
-    }
-
-    function finishPoints(position) {
-      if (!position) return 0;
-
-      const rank = parseInt(String(position).replace("T", "").trim(), 10);
-      if (Number.isNaN(rank)) return 0;
-
-      if (rank === 1) return 30;
-      if (rank === 2) return 20;
-      if (rank === 3) return 18;
-      if (rank === 4) return 16;
-      if (rank === 5) return 14;
-      if (rank === 6) return 12;
-      if (rank === 7) return 10;
-      if (rank === 8) return 9;
-      if (rank === 9) return 8;
-      if (rank === 10) return 7;
-      if (rank <= 15) return 6;
-      if (rank <= 20) return 5;
-      if (rank <= 25) return 4;
-      if (rank <= 30) return 3;
-      if (rank <= 40) return 2;
-      if (rank <= 50) return 1;
-
-      return 0;
-    }
-
-    function eventStartDate(event) {
-      return event.date || event.startDate || event.start_date || event.tournStartDate || event.tournamentStartDate || event.start || "";
-    }
-
-    function eventEndDate(event) {
-      return event.endDate || event.end_date || event.tournEndDate || event.tournamentEndDate || event.end || "";
-    }
-
-    function eventName(event) {
-      return event.name || event.tournName || event.tournamentName || event.officialName || "Unnamed tournament";
-    }
-
-    function eventTournId(event) {
-      return event.tournId || event.tournamentId || event.id || "";
-    }
-
-    function flattenScheduleResponse(data) {
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data.schedule)) return data.schedule;
-      if (Array.isArray(data.tournaments)) return data.tournaments;
-      if (Array.isArray(data.events)) return data.events;
-      if (Array.isArray(data.data)) return data.data;
-      return [];
-    }
-
-    function sortEventsByDate(events) {
-      return [...events].sort((a, b) => String(eventStartDate(a)).localeCompare(String(eventStartDate(b))));
-    }
-
-    function selectCurrentEvent(events) {
-      const today = new Date();
-      const todayTime = today.getTime();
-
-      let current = events.find((event) => {
-        const start = new Date(eventStartDate(event)).getTime();
-        const end = new Date(eventEndDate(event) || eventStartDate(event)).getTime();
-        if (Number.isNaN(start)) return false;
-        const adjustedEnd = Number.isNaN(end) ? start + 4 * 24 * 60 * 60 * 1000 : end + 24 * 60 * 60 * 1000;
-        return todayTime >= start && todayTime <= adjustedEnd;
-      });
-
-      if (current) return current;
-
-      const future = events
-        .map((event) => ({ event, start: new Date(eventStartDate(event)).getTime() }))
-        .filter((item) => !Number.isNaN(item.start) && item.start >= todayTime)
-        .sort((a, b) => a.start - b.start);
-
-      return future[0]?.event || events[0] || null;
-    }
-
-    async function loadSchedule() {
-      const statusEl = document.getElementById("scores-status");
-      const year = document.getElementById("tourn-year-input").value.trim();
-
-      if (!year) {
-        statusEl.textContent = "Enter a year first.";
-        return;
-      }
-
-      statusEl.textContent = "Loading PGA Tour schedule...";
-
-      try {
-        const data = await golfApiFetch("schedule", { orgId: "1", year });
-        scheduleEvents = sortEventsByDate(flattenScheduleResponse(data)).filter((event) => eventTournId(event));
-
-        const select = document.getElementById("tournament-select");
-        select.innerHTML = "";
-
-        if (!scheduleEvents.length) {
-          select.innerHTML = `<option value="">No tournaments found</option>`;
-          statusEl.textContent = "No schedule events found for that year.";
-          return;
-        }
-
-        scheduleEvents.forEach((event, index) => {
-          const option = document.createElement("option");
-          option.value = String(index);
-          const start = eventStartDate(event);
-          const dateLabel = start ? ` | ${start}` : "";
-          option.textContent = `${eventName(event)} | tournId ${eventTournId(event)}${dateLabel}`;
-          select.appendChild(option);
-        });
-
-        const selected = selectCurrentEvent(scheduleEvents);
-        if (selected) {
-          select.value = String(scheduleEvents.indexOf(selected));
-        }
-
-        statusEl.textContent = `✅ Loaded ${scheduleEvents.length} tournaments. Pick one, then link it.`;
-      } catch (err) {
-        statusEl.textContent = "❌ " + err.message;
-      }
-    }
-
-    async function fetchTournamentInfo() {
-      const statusEl = document.getElementById("scores-status");
-      const year = document.getElementById("tourn-year-input").value.trim();
-      const selectedIndex = document.getElementById("tournament-select").value;
-      const selectedEvent = scheduleEvents[Number(selectedIndex)];
-      const tournId = selectedEvent ? eventTournId(selectedEvent) : "";
-
-      if (!tournId || !year) {
-        statusEl.textContent = "Load the schedule and select a tournament first.";
-        return;
-      }
-
-      statusEl.textContent = "Linking tournament...";
-
-      try {
-        const data = await golfApiFetch("tournament", { orgId: "1", tournId, year });
-        const course = data.courses?.[0];
-        const coursePar = course ? course.holes.map((h) => parseInt(h.par, 10)) : [];
-
-        await setDoc(tournamentMetaRef, {
-          tournId,
-          year,
-          orgId: "1",
-          coursePar,
-          courseName: course?.courseName || "",
-          tournamentName: data.name || eventName(selectedEvent),
-          lastFetched: new Date().toISOString()
-        }, { merge: true });
-
-        const linkedBox = document.getElementById("linked-tournament-box");
-        linkedBox.style.display = "block";
-        linkedBox.textContent = `Linked: ${data.name || eventName(selectedEvent)} | tournId ${tournId} | ${course?.courseName || "Course pending"}`;
-
-        const fieldByNormalized = new Map();
-        currentField.forEach((g) => fieldByNormalized.set(g.normalizedName || normalizeName(g.name), g));
-
-        let matched = 0;
-        let missed = 0;
-
-        for (const p of (data.players || [])) {
-          const golfer = fieldByNormalized.get(normalizeName(`${p.firstName} ${p.lastName}`));
-
-          if (!golfer) {
-            missed++;
-            continue;
-          }
-
-          await updateDoc(doc(fieldCollection, golfer.id), {
-            playerId: p.playerId
-          });
-
-          matched++;
-        }
-
-        statusEl.textContent = `✅ Linked ${data.name || eventName(selectedEvent)}. Matched ${matched} players, missed ${missed}.`;
-      } catch (err) {
-        statusEl.textContent = "❌ " + err.message;
-      }
-    }
-
-    function getRoundScoreToPar(row, roundId) {
-      const round = row.rounds?.find((r) => Number(r.roundId) === Number(roundId));
-      return round?.scoreToPar || "";
-    }
-
-    async function refreshScores() {
-      const statusEl = document.getElementById("scores-status");
-      const metaSnap = await getDoc(tournamentMetaRef);
-
-      if (!metaSnap.exists() || !metaSnap.data().tournId) {
-        statusEl.textContent = "❌ Link a tournament first.";
-        return;
-      }
-
-      if (!draftState?.picks?.length) {
-        statusEl.textContent = "❌ No drafted golfers yet.";
-        return;
-      }
-
-      const { tournId, year, coursePar } = metaSnap.data();
-      statusEl.textContent = "Refreshing scores for drafted golfers...";
-
-      try {
-        const leaderboard = await golfApiFetch("leaderboard", { orgId: "1", tournId, year });
-        const rows = leaderboard.leaderboardRows || [];
-
-        const draftedIds = new Set(draftState.picks.map((p) => p.playerId));
-        const draftedGolfers = currentField.filter((g) => draftedIds.has(g.id) && g.playerId);
-
-        let refreshedCount = 0;
-
-        for (const golfer of draftedGolfers) {
-          const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
-          if (!row) continue;
-
-          const existingSnap = await getDoc(doc(fieldCollection, golfer.id));
-          const holesByRound = existingSnap.data()?.holesByRound || {};
-          const roundIds = (row.rounds || []).map((r) => r.roundId).filter((id) => id !== undefined && id !== null);
-
-          for (const roundId of roundIds) {
-            if (holesByRound[roundId]?.complete) continue;
-
-            const cardResp = await golfApiFetch("scorecard", {
-              orgId: "1",
-              tournId,
-              year,
-              playerId: golfer.playerId,
-              roundId
-            });
-
-            const card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
-            const holesObj = card?.holes || {};
-
-            let roundPoints = 0;
-            const holesArr = [];
-
-            for (let h = 1; h <= 18; h++) {
-              const hd = holesObj[String(h)];
-              const par = hd?.par ?? coursePar?.[h - 1] ?? defaultPar[h - 1];
-              const strokes = hd?.holeScore ?? null;
-              const pts = (strokes !== null && par !== null && par !== undefined) ? holePoints(strokes, par) : 0;
-
-              roundPoints += pts;
-              holesArr.push({
-                holeScore: strokes,
-                par,
-                points: pts
-              });
-            }
-
-            holesByRound[roundId] = {
-              holes: holesArr,
-              roundPoints,
-              complete: !!card?.roundComplete
-            };
-          }
-
-          const totalHolePoints = Object.values(holesByRound).reduce((sum, r) => sum + (r.roundPoints || 0), 0);
-          const finPts = finishPoints(row.position);
-          const totalPoints = totalHolePoints + finPts;
-
-          await updateDoc(doc(fieldCollection, golfer.id), {
-            position: row.position || "",
-            thru: row.thru || "",
-            totalScore: row.total || "",
-            r1: getRoundScoreToPar(row, 1),
-            r2: getRoundScoreToPar(row, 2),
-            r3: getRoundScoreToPar(row, 3),
-            r4: getRoundScoreToPar(row, 4),
-            holesByRound,
-            totalHolePoints,
-            finishPoints: finPts,
-            totalPoints
-          });
-
-          refreshedCount++;
-        }
-
-        statusEl.textContent = `✅ Refreshed ${refreshedCount} drafted golfers.`;
-      } catch (err) {
-        statusEl.textContent = "❌ " + err.message;
-      }
-    }
-
-
-    let currentField = [];
-    let draftState = null;
-    let activeScorecardGolfer = null;
-    let activeScorecardRound = 1;
-
-    let fieldSort = { key: "name", direction: "asc" };
-    let draftSort = { key: "name", direction: "asc" };
-
-    const fieldSearchInput = document.getElementById("field-search");
-    const scoresSearchInput = document.getElementById("scores-search");
-
-    document.getElementById("login-btn").addEventListener("click", async () => {
-      const pin = document.getElementById("pin").value;
-
-      if (pin !== CORRECT_PIN) {
-        document.getElementById("status").textContent = "❌ Wrong PIN";
-        return;
-      }
-
-      try {
-        await signInAnonymously(auth);
-      } catch (err) {
-        document.getElementById("status").textContent = "❌ " + err.message;
-      }
-    });
-
-    document.getElementById("pin").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") document.getElementById("login-btn").click();
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("login-box").style.display = "none";
-        document.getElementById("app-box").style.display = "block";
-        listenToField();
-        listenToDraft();
-      }
-    });
-
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("section").forEach((s) => (s.style.display = "none"));
-        document.getElementById(btn.dataset.tab).style.display = "block";
-      });
-    });
-
-    document.querySelectorAll(".field-sort").forEach((th) => {
-      th.addEventListener("click", () => setSortState("field", th.dataset.sort));
-    });
-
-    document.querySelectorAll(".draft-sort").forEach((th) => {
-      th.addEventListener("click", () => setSortState("draft", th.dataset.sort));
-    });
-
-    updateSortIndicators();
-
-    document.querySelectorAll(".round-tab").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".round-tab").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeScorecardRound = Number(btn.dataset.round);
-        renderScorecardModal();
-      });
-    });
-
-    document.getElementById("close-scorecard-btn").addEventListener("click", closeScorecardModal);
-    document.getElementById("scorecard-modal").addEventListener("click", (e) => {
-      if (e.target.id === "scorecard-modal") closeScorecardModal();
-    });
-
-    function lastNameKey(name) {
-      if (!name) return "";
-
-      const suffixes = ["jr", "sr", "ii", "iii", "iv"];
-      const parts = String(name)
-        .replace(/[.,']/g, "")
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .filter((part) => !suffixes.includes(part.toLowerCase()));
-
-      if (parts.length === 0) return "";
-
-      const last = parts[parts.length - 1].toLowerCase();
-      const first = parts.slice(0, -1).join(" ").toLowerCase();
-
-      return `${last}-${first}`;
-    }
-
-    function sortGolfersByLastName(golfers) {
-      return [...golfers].sort((a, b) => {
-        const aName = typeof a === "string" ? a : a.name;
-        const bName = typeof b === "string" ? b : b.name;
-        return lastNameKey(aName).localeCompare(lastNameKey(bName));
-      });
-    }
-
-    function parseOddsValue(value) {
-      const raw = String(value || "").replace("+", "").replace(",", "").trim();
-      const num = Number(raw);
-      return Number.isNaN(num) ? null : num;
-    }
-
-    function sortValue(item, key) {
-      if (key === "name") return lastNameKey(item.name);
-      if (key === "status") {
-        const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
-        return pickedIds.has(item.id) ? "drafted" : "available";
-      }
-      if (["winOdds", "top5Odds", "top10Odds"].includes(key)) {
-        return parseOddsValue(item[key]);
-      }
-      return String(item[key] || "").toLowerCase();
-    }
-
-    function sortGolfers(golfers, sortState) {
-      return [...golfers].sort((a, b) => {
-        const av = sortValue(a, sortState.key);
-        const bv = sortValue(b, sortState.key);
-
-        if (av === null && bv === null) return lastNameKey(a.name).localeCompare(lastNameKey(b.name));
-        if (av === null) return 1;
-        if (bv === null) return -1;
-
-        let result = 0;
-
-        if (typeof av === "number" && typeof bv === "number") {
-          result = av - bv;
-        } else {
-          result = String(av).localeCompare(String(bv));
-        }
-
-        return sortState.direction === "asc" ? result : -result;
-      });
-    }
-
-    function setSortState(target, key) {
-      const state = target === "field" ? fieldSort : draftSort;
-
-      if (state.key === key) {
-        state.direction = state.direction === "asc" ? "desc" : "asc";
-      } else {
-        state.key = key;
-        state.direction = "asc";
-      }
-
-      updateSortIndicators();
-
-      if (target === "field") renderFieldTable();
-      if (target === "draft") renderDraftBoard();
-    }
-
-    function updateSortIndicators() {
-      document.querySelectorAll(".field-sort").forEach((th) => {
-        th.classList.remove("sorted-asc", "sorted-desc");
-        if (th.dataset.sort === fieldSort.key) th.classList.add(fieldSort.direction === "asc" ? "sorted-asc" : "sorted-desc");
-      });
-
-      document.querySelectorAll(".draft-sort").forEach((th) => {
-        th.classList.remove("sorted-asc", "sorted-desc");
-        if (th.dataset.sort === draftSort.key) th.classList.add(draftSort.direction === "asc" ? "sorted-asc" : "sorted-desc");
-      });
-    }
-
-
-    function normalizeName(name) {
-      if (!name) return "";
-
-      const suffixes = ["jr", "sr", "ii", "iii", "iv"];
-
-      let clean = String(name)
-        .replace(/[.,']/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
-
-      let parts = clean.split(" ").filter(Boolean);
-      parts = parts.filter((part) => !suffixes.includes(part));
-
-      return parts.sort().join("-");
-    }
-
-    function createIdFromName(name) {
-      return String(name)
-        .toLowerCase()
-        .trim()
-        .replace(/[.,']/g, "")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-    }
-
-    function isOddsLine(line) {
-      return /^[+-]\d+$/.test(line.trim());
-    }
-
-    function isLikelyPlayerName(line) {
-      const badWords = ["john deere", "wed ", "outright", "top 5", "top 10", "including ties", "winner"];
-      const clean = line.trim().toLowerCase();
-
-      if (!clean) return false;
-      if (isOddsLine(clean)) return false;
-      if (badWords.some((word) => clean.includes(word))) return false;
-      if (/\d/.test(clean)) return false;
-
-      return true;
-    }
-
-    function parseDraftKingsOddsText(text) {
-      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-      const parsed = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const possibleName = lines[i];
-
-        if (!isLikelyPlayerName(possibleName)) continue;
-
-        const odds = [];
-        let j = i + 1;
-
-        while (j < lines.length && odds.length < 3) {
-          if (isOddsLine(lines[j])) {
-            odds.push(lines[j]);
-          } else if (isLikelyPlayerName(lines[j])) {
-            break;
-          }
-          j++;
-        }
-
-        if (odds.length === 3) {
-          parsed.push({ name: possibleName, winOdds: odds[0], top5Odds: odds[1], top10Odds: odds[2] });
-          i = j - 1;
-        }
-      }
-
-      return parsed;
-    }
-
-    function getRowValue(row, possibleNames) {
-      const lowered = {};
-
-      Object.keys(row).forEach((key) => {
-        lowered[key.toLowerCase().trim()] = row[key];
-      });
-
-      for (const key of possibleNames) {
-        const value = lowered[key.toLowerCase()];
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return String(value).trim();
-        }
-      }
-
-      return "";
-    }
-
-    function scoreClass(value) {
-      const raw = String(value || "").trim();
-
-      if (!raw || raw === "--") return "muted-cell";
-      if (raw.startsWith("-")) return "score-good";
-      if (raw.startsWith("+")) return "score-bad";
-      if (raw === "E" || raw === "0") return "odds";
-
-      const num = Number(raw);
-      if (!Number.isNaN(num)) {
-        if (num < 0) return "score-good";
-        if (num > 0) return "score-bad";
-      }
-
-      return "odds";
-    }
-
-    function parseScoreNumber(value) {
-      const raw = String(value || "").trim();
-
-      if (!raw || raw === "--") return null;
-      if (raw.toUpperCase() === "E") return 0;
-
-      const cleaned = raw.replace("+", "");
-      const num = Number(cleaned);
-
-      return Number.isNaN(num) ? null : num;
-    }
-
-    function formatScoreNumber(num) {
-      if (num === null || num === undefined || Number.isNaN(num)) return "--";
-      if (num === 0) return "E";
-      return num > 0 ? `+${num}` : String(num);
-    }
-
-    function pointsFromStrokes(totalScore) {
-      const strokes = parseScoreNumber(totalScore);
-      if (strokes === null) return null;
-      return -strokes;
-    }
-
-    function formatPoints(points) {
-      if (points === null || points === undefined || Number.isNaN(points)) return "--";
-      return points > 0 ? `+${points}` : String(points);
-    }
-
-    function getPlayerTeam(playerId) {
-      if (!draftState?.picks) return "";
-      const pick = draftState.picks.find((p) => p.playerId === playerId);
-      return pick ? pick.team : "";
-    }
-
-    function getHoleValue(row, round, hole) {
-      return getRowValue(row, [
-        `R${round}H${hole}`,
-        `R${round} H${hole}`,
-        `Round ${round} Hole ${hole}`,
-        `Round${round}Hole${hole}`,
-        `R${round}_${hole}`,
-        `R${round}-${hole}`,
-        `H${hole}R${round}`
-      ]);
-    }
-
-    document.getElementById("csv-input").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      Papa.parse(file, {
-        complete: async (results) => {
-          const names = results.data
-            .map((row) => (row[0] || "").trim())
-            .filter((name) =>
-              name &&
-              name.toLowerCase() !== "name" &&
-              name.toLowerCase() !== "golfer" &&
-              name.toLowerCase() !== "player"
-            );
-
-          document.getElementById("upload-status").textContent = `Uploading ${names.length} golfers...`;
-
-          const existing = await getDocs(fieldCollection);
-          for (const d of existing.docs) await deleteDoc(d.ref);
-
-          for (const name of names) {
-            const id = createIdFromName(name);
-
-            await setDoc(doc(fieldCollection, id), {
-              name,
-              normalizedName: normalizeName(name),
-              winOdds: "",
-              top5Odds: "",
-              top10Odds: "",
-              bestFinish: "",
-              top10s: "",
-              notes: "",
-              position: "",
-              thru: "",
-              r1: "",
-              r2: "",
-              r3: "",
-              r4: "",
-              totalScore: "",
-              holes: {},
-              holesByRound: {},
-              playerId: "",
-              totalHolePoints: 0,
-              finishPoints: 0,
-              totalPoints: null
-            });
-          }
-
-          document.getElementById("upload-status").textContent = `✅ Uploaded ${names.length} golfers.`;
-        }
-      });
-    });
-
-    document.getElementById("import-odds-btn").addEventListener("click", async () => {
-      const text = document.getElementById("dk-odds-text").value;
-
-      if (!text.trim()) {
-        document.getElementById("odds-status").textContent = "Paste the DraftKings odds first.";
-        return;
-      }
-
-      const parsedOdds = parseDraftKingsOddsText(text);
-
-      if (parsedOdds.length === 0) {
-        document.getElementById("odds-status").textContent = "Could not find odds in that text.";
-        return;
-      }
-
-      const fieldByNormalizedName = new Map();
-      currentField.forEach((golfer) => fieldByNormalizedName.set(normalizeName(golfer.name), golfer));
-
-      let matched = 0;
-      let missed = 0;
-      const missedNames = [];
-
-      for (const item of parsedOdds) {
-        const matchedGolfer = fieldByNormalizedName.get(normalizeName(item.name));
-
-        if (!matchedGolfer) {
-          missed++;
-          missedNames.push(item.name);
-          continue;
-        }
-
-        await updateDoc(doc(fieldCollection, matchedGolfer.id), {
-          winOdds: item.winOdds,
-          top5Odds: item.top5Odds,
-          top10Odds: item.top10Odds
-        });
-
-        matched++;
-      }
-
-      let message = `✅ Imported odds. Matched ${matched}. Missed ${missed}.`;
-
-      if (missedNames.length) {
-        message += ` Missed: ${missedNames.slice(0, 8).join(", ")}`;
-        if (missedNames.length > 8) message += `, and ${missedNames.length - 8} more`;
-      }
-
-      document.getElementById("odds-status").textContent = message;
-    });
-
-    document.getElementById("clear-odds-btn").addEventListener("click", () => {
-      document.getElementById("dk-odds-text").value = "";
-      document.getElementById("odds-status").textContent = "";
-    });
-
-    document.getElementById("load-schedule-btn").addEventListener("click", loadSchedule);
-    document.getElementById("fetch-tournament-btn").addEventListener("click", fetchTournamentInfo);
-    document.getElementById("refresh-scores-btn").addEventListener("click", refreshScores);
-
-    fieldSearchInput.addEventListener("input", renderFieldTable);
-    scoresSearchInput.addEventListener("input", renderScoresTable);
-
-    function listenToField() {
-      onSnapshot(fieldCollection, (snapshot) => {
-        currentField = [];
-
-        snapshot.forEach((docSnap) => {
-          currentField.push({
-            id: docSnap.id,
-            name: docSnap.data().name,
-            winOdds: docSnap.data().winOdds || "",
-            top5Odds: docSnap.data().top5Odds || "",
-            top10Odds: docSnap.data().top10Odds || "",
-            bestFinish: docSnap.data().bestFinish || "",
-            top10s: docSnap.data().top10s || "",
-            notes: docSnap.data().notes || "",
-            position: docSnap.data().position || "",
-            thru: docSnap.data().thru || "",
-            r1: docSnap.data().r1 || "",
-            r2: docSnap.data().r2 || "",
-            r3: docSnap.data().r3 || "",
-            r4: docSnap.data().r4 || "",
-            totalScore: docSnap.data().totalScore || "",
-            holes: docSnap.data().holes || {},
-            holesByRound: docSnap.data().holesByRound || {},
-            playerId: docSnap.data().playerId || "",
-            normalizedName: docSnap.data().normalizedName || normalizeName(docSnap.data().name),
-            totalHolePoints: docSnap.data().totalHolePoints || 0,
-            finishPoints: docSnap.data().finishPoints || 0,
-            totalPoints: docSnap.data().totalPoints ?? null
-          });
-        });
-
-        currentField = sortGolfers(currentField, fieldSort);
-
-        renderFieldTable();
-        renderDraftBoard();
-        renderScoresTable();
-      });
-    }
-
-    function renderFieldTable() {
-      const list = document.getElementById("field-list");
-      const search = fieldSearchInput.value.toLowerCase();
-      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
-
-      const filtered = sortGolfers(currentField.filter((g) => g.name.toLowerCase().includes(search)), fieldSort);
-
-      list.innerHTML = "";
-
-      if (filtered.length === 0) {
-        list.innerHTML = `<tr><td colspan="8" class="muted-cell">No golfers found.</td></tr>`;
-      }
-
-      filtered.forEach((g) => {
-        const drafted = pickedIds.has(g.id);
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="golfer-name">${g.name}</td>
-          <td class="${g.winOdds ? "odds" : "muted-cell"}">${g.winOdds || "No odds"}</td>
-          <td class="${g.top5Odds ? "odds" : "muted-cell"}">${g.top5Odds || "No odds"}</td>
-          <td class="${g.top10Odds ? "odds" : "muted-cell"}">${g.top10Odds || "No odds"}</td>
-          <td>${g.bestFinish || '<span class="muted-cell">Add finish</span>'}</td>
-          <td>${g.top10s || '<span class="muted-cell">Add</span>'}</td>
-          <td>${drafted ? '<span class="rank-badge">Drafted</span>' : '<span class="pill">Available</span>'}</td>
-          <td>${g.notes || '<span class="muted-cell">Add notes</span>'}</td>
-        `;
-
-        list.appendChild(tr);
-      });
-
-      updateStats();
-    }
-
-    function renderScoresTable() {
-      const list = document.getElementById("scores-list");
-      const search = scoresSearchInput.value.toLowerCase();
-
-      const filtered = currentField
-        .filter((g) => g.name.toLowerCase().includes(search))
-        .sort((a, b) => {
-          const aPoints = a.totalPoints ?? null;
-          const bPoints = b.totalPoints ?? null;
-
-          if (aPoints === null && bPoints === null) return lastNameKey(a.name).localeCompare(lastNameKey(b.name));
-          if (aPoints === null) return 1;
-          if (bPoints === null) return -1;
-
-          return bPoints - aPoints;
-        });
-
-      list.innerHTML = "";
-
-      if (filtered.length === 0) {
-        list.innerHTML = `<tr><td colspan="10" class="muted-cell">No scores found.</td></tr>`;
-      }
-
-      filtered.forEach((g) => {
-        const team = getPlayerTeam(g.id);
-        const points = g.totalPoints ?? null;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="golfer-name score-click" data-player-id="${g.id}">${g.name}</td>
-          <td>${g.position || '<span class="muted-cell">--</span>'}</td>
-          <td>${g.thru || '<span class="muted-cell">--</span>'}</td>
-          <td>${g.r1 || '<span class="muted-cell">--</span>'}</td>
-          <td>${g.r2 || '<span class="muted-cell">--</span>'}</td>
-          <td>${g.r3 || '<span class="muted-cell">--</span>'}</td>
-          <td>${g.r4 || '<span class="muted-cell">--</span>'}</td>
-          <td class="${scoreClass(g.totalScore)}">${g.totalScore || "--"}</td>
-          <td class="${points !== null && points > 0 ? "score-good" : points !== null && points < 0 ? "score-bad" : "odds"}">${formatPoints(points)}</td>
-          <td>${team ? `<span class="rank-badge">${team}</span>` : '<span class="muted-cell">Undrafted</span>'}</td>
-        `;
-
-        list.appendChild(tr);
-      });
-
-      document.querySelectorAll(".score-click").forEach((cell) => {
-        cell.addEventListener("click", () => {
-          const golfer = currentField.find((g) => g.id === cell.dataset.playerId);
-          openScorecardModal(golfer);
-        });
-      });
-
-      updateScoreStats();
-    }
-
-    function updateStats() {
-      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
-
-      const total = currentField.length;
-      const drafted = currentField.filter((g) => pickedIds.has(g.id)).length;
-      const oddsCount = currentField.filter((g) => g.winOdds || g.top5Odds || g.top10Odds).length;
-
-      document.getElementById("total-golfers").textContent = total;
-      document.getElementById("odds-count").textContent = oddsCount;
-      document.getElementById("drafted-count").textContent = drafted;
-      document.getElementById("available-count").textContent = total - drafted;
-    }
-
-    function updateScoreStats() {
-      const scored = currentField.filter((g) => g.totalScore);
-      document.getElementById("score-rows-count").textContent = scored.length;
-
-      if (!draftState?.picks?.length) {
-        document.getElementById("team-a-score").textContent = "--";
-        document.getElementById("team-b-score").textContent = "--";
-        document.getElementById("score-leader").textContent = "--";
-        return;
-      }
-
-      const teamPoints = {};
-
-      draftState.picks.forEach((pick) => {
-        const golfer = currentField.find((g) => g.id === pick.playerId);
-        const points = golfer ? (golfer.totalPoints ?? null) : null;
-
-        if (!teamPoints[pick.team]) teamPoints[pick.team] = 0;
-        if (points !== null) teamPoints[pick.team] += points;
-      });
-
-      const teamA = draftState.teamA || "Team A";
-      const teamB = draftState.teamB || "Team B";
-
-      const teamAScore = teamPoints[teamA] ?? 0;
-      const teamBScore = teamPoints[teamB] ?? 0;
-
-      document.getElementById("team-a-score").textContent = formatPoints(teamAScore);
-      document.getElementById("team-b-score").textContent = formatPoints(teamBScore);
-
-      if (teamAScore > teamBScore) {
-        document.getElementById("score-leader").textContent = teamA;
-      } else if (teamBScore > teamAScore) {
-        document.getElementById("score-leader").textContent = teamB;
-      } else {
-        document.getElementById("score-leader").textContent = "Tied";
-      }
-    }
-
-    function openScorecardModal(golfer) {
-      if (!golfer) return;
-      activeScorecardGolfer = golfer;
-      activeScorecardRound = 1;
-
-      document.querySelectorAll(".round-tab").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.round === "1");
-      });
-
-      document.getElementById("scorecard-modal").style.display = "flex";
-      renderScorecardModal();
-    }
-
-    function closeScorecardModal() {
-      document.getElementById("scorecard-modal").style.display = "none";
-      activeScorecardGolfer = null;
-    }
-
-    function renderScorecardModal() {
-      if (!activeScorecardGolfer) return;
-
-      const golfer = activeScorecardGolfer;
-      const roundData = golfer.holesByRound?.[activeScorecardRound];
-      const holes = roundData?.holes || [];
-
-      document.getElementById("modal-player-name").textContent = golfer.name;
-      document.getElementById("modal-player-summary").textContent =
-        `Position: ${golfer.position || "--"} | Total: ${golfer.totalScore || "--"} | Points: ${formatPoints(golfer.totalPoints)}`;
-
-      document.getElementById("scorecard-content").innerHTML =
-        renderNineTable(1, 9, holes) + renderNineTable(10, 18, holes);
-    }
-
-    function renderNineTable(startHole, endHole, holes) {
-      const range = [];
-      for (let i = startHole; i <= endHole; i++) range.push(i);
-
-      const parTotal = range.reduce((sum, h) => sum + (holes[h - 1]?.par || defaultPar[h - 1] || 0), 0);
-      const scoreTotal = range.reduce((sum, h) => sum + (holes[h - 1]?.holeScore || 0), 0);
-
-      const scoreCells = range.map((h) => {
-        const hole = holes[h - 1];
-        const score = hole?.holeScore ?? "--";
-        const par = hole?.par ?? defaultPar[h - 1];
-
-        let cls = "";
-
-        if (hole?.holeScore !== null && hole?.holeScore !== undefined && par !== null && par !== undefined) {
-          if (hole.holeScore < par) cls = "score-good";
-          if (hole.holeScore > par) cls = "score-bad";
-        }
-
-        return `<td class="${cls}">${score}</td>`;
-      }).join("");
-
-      return `
-        <div class="scorecard-nine">
-          <table class="scorecard-table">
-            <colgroup>
-              <col style="width:82px">
-              ${range.map(() => `<col>`).join("")}
-              <col style="width:82px">
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Hole</th>
-                ${range.map((h) => `<th>${h}</th>`).join("")}
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Par</td>
-                ${range.map((h) => `<td>${holes[h - 1]?.par ?? defaultPar[h - 1] ?? "--"}</td>`).join("")}
-                <td>${parTotal || "--"}</td>
-              </tr>
-              <tr>
-                <td>R${activeScorecardRound}</td>
-                ${scoreCells}
-                <td>${scoreTotal || "--"}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    document.getElementById("start-draft-btn").addEventListener("click", async () => {
-      const teamA = "Chenny";
-      const teamB = "Juice";
-      const rosterSize = parseInt(document.getElementById("roster-size").value, 10) || 5;
-
-      const firstPick = Math.random() < 0.5 ? teamA : teamB;
-      const order = firstPick === teamA ? [teamA, teamB] : [teamB, teamA];
-
-      await setDoc(draftDocRef, {
-        status: "drafting",
-        rosterSize,
-        teamA,
-        teamB,
-        order,
-        picks: []
-      });
-    });
-
-    document.getElementById("reset-draft-btn").addEventListener("click", async () => {
-      if (!confirm("Reset the draft? This clears all picks.")) return;
-      await setDoc(draftDocRef, { status: "setup" });
-    });
-
-    function listenToDraft() {
-      onSnapshot(draftDocRef, (docSnap) => {
-        draftState = docSnap.exists() ? docSnap.data() : { status: "setup" };
-        renderFieldTable();
-        renderDraftBoard();
-        renderScoresTable();
-      });
-    }
-
-    function currentPicker() {
-      const { order, picks, rosterSize } = draftState;
-      const totalPicks = picks.length;
-      const totalNeeded = rosterSize * 2;
-
-      if (totalPicks >= totalNeeded) return null;
-
-      const round = Math.floor(totalPicks / 2);
-      const posInRound = totalPicks % 2;
-
-      return round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
-    }
-
-    async function draftGolfer(golfer) {
-      const picker = currentPicker();
-      if (!picker) return;
-
-      if (!confirm(`Select ${golfer.name} for ${picker}?`)) return;
-
-      const freshSnap = await getDoc(draftDocRef);
-      const fresh = freshSnap.data();
-
-      if (fresh.picks.some((p) => p.playerId === golfer.id)) {
-        alert("That golfer was just picked. Try another.");
-        return;
-      }
-
-      const newPicks = [
-        ...fresh.picks,
-        { team: picker, playerId: golfer.id, playerName: golfer.name }
-      ];
-
-      await updateDoc(draftDocRef, { picks: newPicks });
-    }
-
-    function renderDraftBoard() {
-      if (!draftState) return;
-
-      const setupDiv = document.getElementById("draft-setup");
-      const boardDiv = document.getElementById("draft-board");
-      const completeDiv = document.getElementById("draft-complete");
-
-      if (draftState.status !== "drafting") {
-        setupDiv.style.display = "block";
-        boardDiv.style.display = "none";
-        completeDiv.style.display = "none";
-        updateStats();
-        updateScoreStats();
-        return;
-      }
-
-      setupDiv.style.display = "none";
-      boardDiv.style.display = "block";
-
-      const picker = currentPicker();
-      const turnEl = document.getElementById("turn-indicator");
-
-      if (!picker) {
-        turnEl.textContent = "";
-        completeDiv.style.display = "block";
-      } else {
-        completeDiv.style.display = "none";
-        turnEl.textContent = `👉 ${picker}'s turn`;
-      }
-
-      const pickedIds = new Set(draftState.picks.map((p) => p.playerId));
-      const available = sortGolfers(currentField.filter((g) => !pickedIds.has(g.id)), draftSort);
-
-      const availableList = document.getElementById("available-list");
-      availableList.innerHTML = "";
-
-      if (available.length === 0) {
-        availableList.innerHTML = `<tr><td colspan="2" class="muted-cell">No available golfers.</td></tr>`;
-      }
-
-      available.forEach((g) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="golfer-name">${g.name}</td>
-          <td><button class="draft-pick-btn" ${!picker ? "disabled" : ""}>Select</button></td>
-        `;
-
-        tr.querySelector("button").addEventListener("click", () => draftGolfer(g));
-        availableList.appendChild(tr);
-      });
-
-      document.getElementById("team-a-header").textContent = draftState.teamA;
-      document.getElementById("team-b-header").textContent = draftState.teamB;
-
-      const rosterA = document.getElementById("team-a-roster");
-      const rosterB = document.getElementById("team-b-roster");
-
-      rosterA.innerHTML = "";
-      rosterB.innerHTML = "";
-
-      const teamAPicks = sortGolfersByLastName(draftState.picks.filter((p) => p.team === draftState.teamA).map((p) => p.playerName));
-      const teamBPicks = sortGolfersByLastName(draftState.picks.filter((p) => p.team === draftState.teamB).map((p) => p.playerName));
-
-      teamAPicks.forEach((name) => {
-        const li = document.createElement("li");
-        li.textContent = name;
-        rosterA.appendChild(li);
-      });
-
-      teamBPicks.forEach((name) => {
-        const li = document.createElement("li");
-        li.textContent = name;
-        rosterB.appendChild(li);
-      });
-
-      updateStats();
-      updateScoreStats();
-    }
-  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
