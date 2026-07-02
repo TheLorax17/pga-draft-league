@@ -254,6 +254,27 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 12px;
+      align-items: center;
+    }
+
+    select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      background: #121914;
+      color: var(--text);
+      font: inherit;
+      min-width: 260px;
+    }
+
+    .linked-tournament {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(166,217,106,.35);
+      border-radius: 8px;
+      background: rgba(130,168,86,.12);
+      color: var(--green-bright);
+      font-weight: 900;
     }
 
     #clear-odds-btn {
@@ -799,13 +820,17 @@
 
           <div class="scores-upload-box">
             <h3>Link This Week's Tournament</h3>
-            <p>Enter the tournId and year, then link it once per week before refreshing scores. Scores refresh only for drafted golfers.</p>
+            <p>Load the PGA Tour schedule, pick the event, then refresh only the drafted golfers.</p>
             <div class="import-actions">
-              <input type="text" id="tourn-id-input" placeholder="tournId, e.g. 007" style="max-width:170px" />
               <input type="text" id="tourn-year-input" placeholder="year, e.g. 2026" value="2026" style="max-width:140px" />
-              <button id="fetch-tournament-btn">Link Tournament</button>
+              <button id="load-schedule-btn">Load Schedule</button>
+              <select id="tournament-select">
+                <option value="">Load schedule first...</option>
+              </select>
+              <button id="fetch-tournament-btn">Link Selected Tournament</button>
               <button id="refresh-scores-btn">Refresh Scores</button>
             </div>
+            <div id="linked-tournament-box" class="linked-tournament" style="display:none;"></div>
           </div>
 
           <div class="stat-grid">
@@ -895,12 +920,13 @@
     // RapidAPI / Live Golf Data setup.
     // IMPORTANT: do not commit a real API key to a public GitHub repo.
     // For quick testing, paste your key below. Long term, move this behind a tiny serverless function.
-    const RAPIDAPI_KEY = "82ae611ae5msh87caa3b40d17bedp15cd62jsn60ae1312f759";
+    const RAPIDAPI_KEY = "PASTE_YOUR_RAPIDAPI_KEY_HERE";
     const RAPIDAPI_HOST = "live-golf-data.p.rapidapi.com";
     const tournamentMetaRef = doc(db, "tournaments", "current");
+    let scheduleEvents = [];
 
     async function golfApiFetch(path, params) {
-      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "82ae611ae5msh87caa3b40d17bedp15cd62jsn60ae1312f759") {
+      if (!RAPIDAPI_KEY || RAPIDAPI_KEY === "PASTE_YOUR_RAPIDAPI_KEY_HERE") {
         throw new Error("Add your RapidAPI key in RAPIDAPI_KEY first.");
       }
 
@@ -959,13 +985,110 @@
       return 0;
     }
 
-    async function fetchTournamentInfo() {
+    function eventStartDate(event) {
+      return event.date || event.startDate || event.start_date || event.tournStartDate || event.tournamentStartDate || event.start || "";
+    }
+
+    function eventEndDate(event) {
+      return event.endDate || event.end_date || event.tournEndDate || event.tournamentEndDate || event.end || "";
+    }
+
+    function eventName(event) {
+      return event.name || event.tournName || event.tournamentName || event.officialName || "Unnamed tournament";
+    }
+
+    function eventTournId(event) {
+      return event.tournId || event.tournamentId || event.id || "";
+    }
+
+    function flattenScheduleResponse(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.schedule)) return data.schedule;
+      if (Array.isArray(data.tournaments)) return data.tournaments;
+      if (Array.isArray(data.events)) return data.events;
+      if (Array.isArray(data.data)) return data.data;
+      return [];
+    }
+
+    function sortEventsByDate(events) {
+      return [...events].sort((a, b) => String(eventStartDate(a)).localeCompare(String(eventStartDate(b))));
+    }
+
+    function selectCurrentEvent(events) {
+      const today = new Date();
+      const todayTime = today.getTime();
+
+      let current = events.find((event) => {
+        const start = new Date(eventStartDate(event)).getTime();
+        const end = new Date(eventEndDate(event) || eventStartDate(event)).getTime();
+        if (Number.isNaN(start)) return false;
+        const adjustedEnd = Number.isNaN(end) ? start + 4 * 24 * 60 * 60 * 1000 : end + 24 * 60 * 60 * 1000;
+        return todayTime >= start && todayTime <= adjustedEnd;
+      });
+
+      if (current) return current;
+
+      const future = events
+        .map((event) => ({ event, start: new Date(eventStartDate(event)).getTime() }))
+        .filter((item) => !Number.isNaN(item.start) && item.start >= todayTime)
+        .sort((a, b) => a.start - b.start);
+
+      return future[0]?.event || events[0] || null;
+    }
+
+    async function loadSchedule() {
       const statusEl = document.getElementById("scores-status");
-      const tournId = document.getElementById("tourn-id-input").value.trim();
       const year = document.getElementById("tourn-year-input").value.trim();
 
+      if (!year) {
+        statusEl.textContent = "Enter a year first.";
+        return;
+      }
+
+      statusEl.textContent = "Loading PGA Tour schedule...";
+
+      try {
+        const data = await golfApiFetch("schedule", { orgId: "1", year });
+        scheduleEvents = sortEventsByDate(flattenScheduleResponse(data)).filter((event) => eventTournId(event));
+
+        const select = document.getElementById("tournament-select");
+        select.innerHTML = "";
+
+        if (!scheduleEvents.length) {
+          select.innerHTML = `<option value="">No tournaments found</option>`;
+          statusEl.textContent = "No schedule events found for that year.";
+          return;
+        }
+
+        scheduleEvents.forEach((event, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          const start = eventStartDate(event);
+          const dateLabel = start ? ` | ${start}` : "";
+          option.textContent = `${eventName(event)} | tournId ${eventTournId(event)}${dateLabel}`;
+          select.appendChild(option);
+        });
+
+        const selected = selectCurrentEvent(scheduleEvents);
+        if (selected) {
+          select.value = String(scheduleEvents.indexOf(selected));
+        }
+
+        statusEl.textContent = `✅ Loaded ${scheduleEvents.length} tournaments. Pick one, then link it.`;
+      } catch (err) {
+        statusEl.textContent = "❌ " + err.message;
+      }
+    }
+
+    async function fetchTournamentInfo() {
+      const statusEl = document.getElementById("scores-status");
+      const year = document.getElementById("tourn-year-input").value.trim();
+      const selectedIndex = document.getElementById("tournament-select").value;
+      const selectedEvent = scheduleEvents[Number(selectedIndex)];
+      const tournId = selectedEvent ? eventTournId(selectedEvent) : "";
+
       if (!tournId || !year) {
-        statusEl.textContent = "Enter tournId and year.";
+        statusEl.textContent = "Load the schedule and select a tournament first.";
         return;
       }
 
@@ -982,9 +1105,13 @@
           orgId: "1",
           coursePar,
           courseName: course?.courseName || "",
-          tournamentName: data.name || "",
+          tournamentName: data.name || eventName(selectedEvent),
           lastFetched: new Date().toISOString()
         }, { merge: true });
+
+        const linkedBox = document.getElementById("linked-tournament-box");
+        linkedBox.style.display = "block";
+        linkedBox.textContent = `Linked: ${data.name || eventName(selectedEvent)} | tournId ${tournId} | ${course?.courseName || "Course pending"}`;
 
         const fieldByNormalized = new Map();
         currentField.forEach((g) => fieldByNormalized.set(g.normalizedName || normalizeName(g.name), g));
@@ -1007,7 +1134,7 @@
           matched++;
         }
 
-        statusEl.textContent = `✅ Linked ${data.name || "tournament"}. Matched ${matched} players, missed ${missed}.`;
+        statusEl.textContent = `✅ Linked ${data.name || eventName(selectedEvent)}. Matched ${matched} players, missed ${missed}.`;
       } catch (err) {
         statusEl.textContent = "❌ " + err.message;
       }
@@ -1544,6 +1671,7 @@
       document.getElementById("odds-status").textContent = "";
     });
 
+    document.getElementById("load-schedule-btn").addEventListener("click", loadSchedule);
     document.getElementById("fetch-tournament-btn").addEventListener("click", fetchTournamentInfo);
     document.getElementById("refresh-scores-btn").addEventListener("click", refreshScores);
 
