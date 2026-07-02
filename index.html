@@ -263,9 +263,10 @@
 
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       margin: 18px 0;
+      width: 100%;
     }
 
     .stat-card {
@@ -331,6 +332,7 @@
       border-radius: 10px;
       background: #121914;
       border: 1px solid var(--border);
+      width: 100%;
     }
 
     table {
@@ -349,12 +351,39 @@
       letter-spacing: .08em;
       white-space: nowrap;
       border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.sortable:hover {
+      color: var(--amber);
+    }
+
+    th.sortable::after {
+      content: " ↕";
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    th.sortable.sorted-asc::after {
+      content: " ↑";
+      color: var(--amber);
+    }
+
+    th.sortable.sorted-desc::after {
+      content: " ↓";
+      color: var(--amber);
     }
 
     td {
       padding: 14px 16px;
       border-bottom: 1px solid rgba(53,65,57,.75);
       color: var(--text);
+      vertical-align: middle;
     }
 
     tbody tr:hover { background: rgba(130,168,86,.08); }
@@ -401,7 +430,7 @@
 
     .draft-layout {
       display: grid;
-      grid-template-columns: 1.2fr .8fr;
+      grid-template-columns: minmax(0, 1.45fr) minmax(340px, .75fr);
       gap: 18px;
       align-items: start;
     }
@@ -413,19 +442,13 @@
       padding: 18px;
     }
 
-    #available-list, #team-a-roster, #team-b-roster {
+    #team-a-roster, #team-b-roster {
       list-style: none;
       padding: 0;
       margin: 0;
     }
 
-    #available-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 10px;
-    }
-
-    #available-list button {
+    .draft-pick-btn {
       width: 100%;
       text-align: left;
       background: #111713;
@@ -433,11 +456,16 @@
       border: 1px solid var(--border);
       text-transform: none;
       letter-spacing: 0;
+      padding: 10px 12px;
     }
 
-    #available-list button:hover {
+    .draft-pick-btn:hover {
       border-color: var(--green-bright);
       background: #1d2a20;
+    }
+
+    .draft-pick-btn:disabled {
+      opacity: .45;
     }
 
     .team-card {
@@ -665,14 +693,14 @@
             <table>
               <thead>
                 <tr>
-                  <th>Golfer</th>
-                  <th>Win</th>
-                  <th>Top 5</th>
-                  <th>Top 10</th>
-                  <th>Best Finish This Year</th>
-                  <th>Top 10s</th>
-                  <th>Status</th>
-                  <th>Notes</th>
+                  <th class="sortable field-sort" data-sort="name">Golfer</th>
+                  <th class="sortable field-sort" data-sort="winOdds">Win</th>
+                  <th class="sortable field-sort" data-sort="top5Odds">Top 5</th>
+                  <th class="sortable field-sort" data-sort="top10Odds">Top 10</th>
+                  <th class="sortable field-sort" data-sort="bestFinish">Best Finish This Year</th>
+                  <th class="sortable field-sort" data-sort="top10s">Top 10s</th>
+                  <th class="sortable field-sort" data-sort="status">Status</th>
+                  <th class="sortable field-sort" data-sort="notes">Notes</th>
                 </tr>
               </thead>
               <tbody id="field-list"></tbody>
@@ -700,7 +728,20 @@
             <div class="draft-layout">
               <div class="available-panel">
                 <h3>Available Golfers</h3>
-                <ul id="available-list"></ul>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="sortable draft-sort" data-sort="name">Golfer</th>
+                        <th class="sortable draft-sort" data-sort="winOdds">Win</th>
+                        <th class="sortable draft-sort" data-sort="top5Odds">Top 5</th>
+                        <th class="sortable draft-sort" data-sort="top10Odds">Top 10</th>
+                        <th>Pick</th>
+                      </tr>
+                    </thead>
+                    <tbody id="available-list"></tbody>
+                  </table>
+                </div>
               </div>
 
               <div class="teams-panel">
@@ -833,6 +874,9 @@
     let activeScorecardGolfer = null;
     let activeScorecardRound = 1;
 
+    let fieldSort = { key: "name", direction: "asc" };
+    let draftSort = { key: "name", direction: "asc" };
+
     const fieldSearchInput = document.getElementById("field-search");
     const scoresSearchInput = document.getElementById("scores-search");
 
@@ -870,6 +914,16 @@
         document.getElementById(btn.dataset.tab).style.display = "block";
       });
     });
+
+    document.querySelectorAll(".field-sort").forEach((th) => {
+      th.addEventListener("click", () => setSortState("field", th.dataset.sort));
+    });
+
+    document.querySelectorAll(".draft-sort").forEach((th) => {
+      th.addEventListener("click", () => setSortState("draft", th.dataset.sort));
+    });
+
+    updateSortIndicators();
 
     document.querySelectorAll(".round-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -911,6 +965,74 @@
         return lastNameKey(aName).localeCompare(lastNameKey(bName));
       });
     }
+
+    function parseOddsValue(value) {
+      const raw = String(value || "").replace("+", "").replace(",", "").trim();
+      const num = Number(raw);
+      return Number.isNaN(num) ? null : num;
+    }
+
+    function sortValue(item, key) {
+      if (key === "name") return lastNameKey(item.name);
+      if (key === "status") {
+        const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
+        return pickedIds.has(item.id) ? "drafted" : "available";
+      }
+      if (["winOdds", "top5Odds", "top10Odds"].includes(key)) {
+        return parseOddsValue(item[key]);
+      }
+      return String(item[key] || "").toLowerCase();
+    }
+
+    function sortGolfers(golfers, sortState) {
+      return [...golfers].sort((a, b) => {
+        const av = sortValue(a, sortState.key);
+        const bv = sortValue(b, sortState.key);
+
+        if (av === null && bv === null) return lastNameKey(a.name).localeCompare(lastNameKey(b.name));
+        if (av === null) return 1;
+        if (bv === null) return -1;
+
+        let result = 0;
+
+        if (typeof av === "number" && typeof bv === "number") {
+          result = av - bv;
+        } else {
+          result = String(av).localeCompare(String(bv));
+        }
+
+        return sortState.direction === "asc" ? result : -result;
+      });
+    }
+
+    function setSortState(target, key) {
+      const state = target === "field" ? fieldSort : draftSort;
+
+      if (state.key === key) {
+        state.direction = state.direction === "asc" ? "desc" : "asc";
+      } else {
+        state.key = key;
+        state.direction = "asc";
+      }
+
+      updateSortIndicators();
+
+      if (target === "field") renderFieldTable();
+      if (target === "draft") renderDraftBoard();
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll(".field-sort").forEach((th) => {
+        th.classList.remove("sorted-asc", "sorted-desc");
+        if (th.dataset.sort === fieldSort.key) th.classList.add(fieldSort.direction === "asc" ? "sorted-asc" : "sorted-desc");
+      });
+
+      document.querySelectorAll(".draft-sort").forEach((th) => {
+        th.classList.remove("sorted-asc", "sorted-desc");
+        if (th.dataset.sort === draftSort.key) th.classList.add(draftSort.direction === "asc" ? "sorted-asc" : "sorted-desc");
+      });
+    }
+
 
     function normalizeName(name) {
       if (!name) return "";
@@ -1258,7 +1380,7 @@
           });
         });
 
-        currentField = sortGolfersByLastName(currentField);
+        currentField = sortGolfers(currentField, fieldSort);
 
         renderFieldTable();
         renderDraftBoard();
@@ -1271,7 +1393,7 @@
       const search = fieldSearchInput.value.toLowerCase();
       const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
 
-      const filtered = sortGolfersByLastName(currentField.filter((g) => g.name.toLowerCase().includes(search)));
+      const filtered = sortGolfers(currentField.filter((g) => g.name.toLowerCase().includes(search)), fieldSort);
 
       list.innerHTML = "";
 
@@ -1588,21 +1710,27 @@
       }
 
       const pickedIds = new Set(draftState.picks.map((p) => p.playerId));
-      const available = sortGolfersByLastName(currentField.filter((g) => !pickedIds.has(g.id)));
+      const available = sortGolfers(currentField.filter((g) => !pickedIds.has(g.id)), draftSort);
 
       const availableList = document.getElementById("available-list");
       availableList.innerHTML = "";
 
+      if (available.length === 0) {
+        availableList.innerHTML = `<tr><td colspan="5" class="muted-cell">No available golfers.</td></tr>`;
+      }
+
       available.forEach((g) => {
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="golfer-name">${g.name}</td>
+          <td class="${g.winOdds ? "odds" : "muted-cell"}">${g.winOdds || "--"}</td>
+          <td class="${g.top5Odds ? "odds" : "muted-cell"}">${g.top5Odds || "--"}</td>
+          <td class="${g.top10Odds ? "odds" : "muted-cell"}">${g.top10Odds || "--"}</td>
+          <td><button class="draft-pick-btn" ${!picker ? "disabled" : ""}>Select</button></td>
+        `;
 
-        btn.textContent = g.winOdds ? `${g.name} (${g.winOdds})` : g.name;
-        btn.disabled = !picker;
-        btn.addEventListener("click", () => draftGolfer(g));
-
-        li.appendChild(btn);
-        availableList.appendChild(li);
+        tr.querySelector("button").addEventListener("click", () => draftGolfer(g));
+        availableList.appendChild(tr);
       });
 
       document.getElementById("team-a-header").textContent = draftState.teamA;
