@@ -430,7 +430,7 @@
 
     .draft-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(340px, .75fr);
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .45fr);
       gap: 18px;
       align-items: start;
     }
@@ -446,6 +446,17 @@
       list-style: none;
       padding: 0;
       margin: 0;
+    }
+
+    .draft-table {
+      min-width: 0;
+      table-layout: fixed;
+    }
+
+    .draft-table th:last-child,
+    .draft-table td:last-child {
+      width: 110px;
+      text-align: right;
     }
 
     .draft-pick-btn {
@@ -575,7 +586,9 @@
     }
 
     .scorecard-table {
-      min-width: 640px;
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
     }
 
     .scorecard-table th,
@@ -590,6 +603,20 @@
       color: var(--amber);
       font-weight: 900;
       text-transform: uppercase;
+      width: 82px;
+    }
+
+    .scorecard-table th:last-child,
+    .scorecard-table td:last-child {
+      width: 82px;
+    }
+
+    .draft-table {
+      min-width: 0 !important;
+    }
+
+    .scorecard-table {
+      min-width: 0 !important;
     }
 
     @media (max-width: 850px) {
@@ -729,13 +756,10 @@
               <div class="available-panel">
                 <h3>Available Golfers</h3>
                 <div class="table-wrap">
-                  <table>
+                  <table class="draft-table">
                     <thead>
                       <tr>
                         <th class="sortable draft-sort" data-sort="name">Golfer</th>
-                        <th class="sortable draft-sort" data-sort="winOdds">Win</th>
-                        <th class="sortable draft-sort" data-sort="top5Odds">Top 5</th>
-                        <th class="sortable draft-sort" data-sort="top10Odds">Top 10</th>
                         <th>Pick</th>
                       </tr>
                     </thead>
@@ -1590,6 +1614,11 @@
       return `
         <div class="scorecard-nine">
           <table class="scorecard-table">
+            <colgroup>
+              <col style="width:82px">
+              ${holes.map(() => `<col>`).join("")}
+              <col style="width:82px">
+            </colgroup>
             <thead>
               <tr>
                 <th>Hole</th>
@@ -1663,6 +1692,8 @@
       const picker = currentPicker();
       if (!picker) return;
 
+      if (!confirm(`Select ${golfer.name} for ${picker}?`)) return;
+
       const freshSnap = await getDoc(draftDocRef);
       const fresh = freshSnap.data();
 
@@ -1716,16 +1747,13 @@
       availableList.innerHTML = "";
 
       if (available.length === 0) {
-        availableList.innerHTML = `<tr><td colspan="5" class="muted-cell">No available golfers.</td></tr>`;
+        availableList.innerHTML = `<tr><td colspan="2" class="muted-cell">No available golfers.</td></tr>`;
       }
 
       available.forEach((g) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="golfer-name">${g.name}</td>
-          <td class="${g.winOdds ? "odds" : "muted-cell"}">${g.winOdds || "--"}</td>
-          <td class="${g.top5Odds ? "odds" : "muted-cell"}">${g.top5Odds || "--"}</td>
-          <td class="${g.top10Odds ? "odds" : "muted-cell"}">${g.top10Odds || "--"}</td>
           <td><button class="draft-pick-btn" ${!picker ? "disabled" : ""}>Select</button></td>
         `;
 
