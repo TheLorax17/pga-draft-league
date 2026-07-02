@@ -5,6 +5,22 @@
 </head>
 <body>
   <h1>PGA Draft League 🏌️</h1>
-  <p>Site coming soon.</p>
+  <p id="status">Connecting to Firebase...</p>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    async function testConnection() {
+      try {
+        await addDoc(collection(db, "connectionTest"), { time: new Date().toISOString() });
+        document.getElementById("status").textContent = "✅ Connected to Firebase!";
+      } catch (err) {
+        document.getElementById("status").textContent = "❌ Error: " + err.message;
+        console.error(err);
+      }
+    }
+    testConnection();
+  </script>
 </body>
 </html>
