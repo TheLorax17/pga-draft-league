@@ -33,8 +33,6 @@
       <h2>Draft</h2>
 
       <div id="draft-setup">
-        <label>Team A name: <input type="text" id="team-a-name" placeholder="Team A" /></label><br/>
-        <label>Team B name: <input type="text" id="team-b-name" placeholder="Team B" /></label><br/>
         <label>Golfers per team: <input type="number" id="roster-size" value="5" min="1" max="20" /></label><br/>
         <button id="start-draft-btn">Flip Coin & Start Draft</button>
       </div>
@@ -77,7 +75,7 @@
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const auth = getAuth();
-    const CORRECT_PIN = "1234"; // your PIN
+    const CORRECT_PIN = "1999"; // your PIN
 
     document.getElementById("login-btn").addEventListener("click", async () => {
       const pin = document.getElementById("pin").value;
@@ -160,8 +158,8 @@
     let draftState = null;
 
     document.getElementById("start-draft-btn").addEventListener("click", async () => {
-      const teamA = document.getElementById("team-a-name").value.trim() || "Team A";
-      const teamB = document.getElementById("team-b-name").value.trim() || "Team B";
+      const teamA = "Chenny";
+      const teamB = "Juice";
       const rosterSize = parseInt(document.getElementById("roster-size").value, 10) || 5;
 
       const firstPick = Math.random() < 0.5 ? teamA : teamB;
