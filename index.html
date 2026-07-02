@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PGA Draft League</title>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -11,64 +12,47 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --green-dark: #06281a;
+      --green: #0f5132;
+      --green-light: #dcfce7;
+      --gold: #d6a735;
+      --bg: #f3f5f1;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --danger: #991b1b;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f5132, #06281a);
-      color: #1f2937;
       min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(214, 167, 53, 0.22), transparent 32%),
+        linear-gradient(135deg, #06351f, #061b12 70%);
+      color: var(--text);
     }
 
-    .page {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 18px;
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: 22px;
-      padding: 28px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: 34px;
-      color: #0f5132;
-    }
-
-    h2, h3, h4 {
-      color: #111827;
-    }
-
-    .subtitle {
-      margin-top: 0;
-      color: #6b7280;
-    }
-
-    input, button {
-      font-size: 16px;
-      border-radius: 10px;
-    }
-
+    button,
     input {
-      padding: 12px;
-      border: 1px solid #d1d5db;
+      font: inherit;
     }
 
     button {
-      cursor: pointer;
       border: none;
+      cursor: pointer;
+      border-radius: 12px;
       padding: 12px 16px;
-      font-weight: 700;
-      background: #0f5132;
+      font-weight: 800;
+      background: var(--green);
       color: white;
-      transition: 0.2s ease;
+      transition: 0.18s ease;
     }
 
     button:hover {
-      background: #0b3d26;
+      background: #0a3d26;
       transform: translateY(-1px);
     }
 
@@ -78,71 +62,295 @@
       transform: none;
     }
 
+    input {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: white;
+    }
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 18px;
+    }
+
+    .shell {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 28px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 28px;
+      background:
+        linear-gradient(135deg, rgba(15, 81, 50, 0.96), rgba(6, 40, 26, 0.96)),
+        radial-gradient(circle at right, rgba(214, 167, 53, 0.32), transparent 36%);
+      color: white;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 38px;
+      letter-spacing: -0.04em;
+    }
+
+    .topbar p {
+      margin: 8px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 16px;
+    }
+
+    .content {
+      padding: 26px;
+    }
+
     #login-box {
-      max-width: 430px;
+      max-width: 440px;
       margin: 12vh auto;
+      padding: 32px;
       text-align: center;
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    }
+
+    #login-box h1 {
+      color: var(--green);
+      margin: 0 0 8px;
+      font-size: 34px;
+    }
+
+    #login-box p {
+      color: var(--muted);
     }
 
     #pin {
       width: 100%;
       margin: 18px 0 12px;
       text-align: center;
-      letter-spacing: 6px;
       font-size: 24px;
+      letter-spacing: 7px;
+    }
+
+    #login-btn {
+      width: 100%;
+    }
+
+    #status,
+    #upload-status {
+      font-weight: 800;
+      color: var(--green);
     }
 
     nav {
       display: flex;
       gap: 10px;
-      margin: 24px 0;
+      margin-bottom: 24px;
       flex-wrap: wrap;
     }
 
     .tab-btn {
-      background: #e5e7eb;
-      color: #111827;
+      background: #eef2f0;
+      color: var(--green-dark);
+      border: 1px solid #dbe4df;
     }
 
     .tab-btn:hover {
-      background: #d1d5db;
+      background: var(--green-light);
     }
 
     section {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 18px;
-      padding: 24px;
+      background: var(--bg);
+      border: 1px solid #dde5df;
+      border-radius: 22px;
+      padding: 22px;
     }
 
-    #csv-input {
-      width: 100%;
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 {
+      margin: 0 0 6px;
+      font-size: 26px;
+    }
+
+    .section-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+
+    .toolbar input {
+      min-width: 260px;
+      flex: 1;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 11px;
+      border-radius: 999px;
       background: white;
-      margin: 10px 0;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
     }
 
-    #field-list,
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .stat-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 25px;
+      color: var(--green-dark);
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 930px;
+    }
+
+    th {
+      background: var(--green-dark);
+      color: white;
+      text-align: left;
+      padding: 14px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: #f0fdf4;
+    }
+
+    .golfer-name {
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .muted-cell {
+      color: #9ca3af;
+      font-style: italic;
+    }
+
+    .odds {
+      font-weight: 900;
+      color: var(--green);
+    }
+
+    .rank-badge {
+      display: inline-block;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .draft-setup-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      max-width: 430px;
+    }
+
+    #roster-size {
+      width: 92px;
+      margin-left: 8px;
+    }
+
+    #turn-indicator {
+      background: var(--green-light);
+      color: #14532d;
+      padding: 16px;
+      border-radius: 16px;
+      margin: 0 0 14px;
+      border: 1px solid #bbf7d0;
+    }
+
+    #reset-draft-btn {
+      background: var(--danger);
+      margin-bottom: 18px;
+    }
+
+    .draft-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .available-panel,
+    .teams-panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
     #available-list,
     #team-a-roster,
     #team-b-roster {
       list-style: none;
       padding: 0;
       margin: 0;
-    }
-
-    #field-list {
-      columns: 3;
-      margin-top: 18px;
-    }
-
-    #field-list li,
-    #team-a-roster li,
-    #team-b-roster li {
-      background: white;
-      padding: 10px 12px;
-      border-radius: 10px;
-      margin-bottom: 8px;
-      border: 1px solid #e5e7eb;
     }
 
     #available-list {
@@ -153,61 +361,58 @@
 
     #available-list button {
       width: 100%;
-      background: white;
-      color: #0f5132;
-      border: 1px solid #bbf7d0;
       text-align: left;
+      background: white;
+      color: var(--green);
+      border: 1px solid #bbf7d0;
     }
 
     #available-list button:hover {
-      background: #dcfce7;
-    }
-
-    .draft-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 22px;
-      margin-top: 22px;
+      background: var(--green-light);
     }
 
     .team-card {
-      background: white;
+      border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 18px;
-      border: 1px solid #e5e7eb;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fafafa;
     }
 
-    #turn-indicator {
-      background: #dcfce7;
-      color: #14532d;
-      padding: 14px 16px;
-      border-radius: 14px;
+    .team-card h4 {
+      margin: 0 0 12px;
+      color: var(--green-dark);
+      font-size: 18px;
     }
 
-    #reset-draft-btn {
-      background: #991b1b;
-      margin-bottom: 18px;
-    }
-
-    #status,
-    #upload-status {
+    .team-card li {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
       font-weight: 700;
-      color: #0f5132;
     }
 
-    @media (max-width: 700px) {
-      .card {
-        padding: 20px;
+    .empty-state {
+      color: var(--muted);
+      background: white;
+      border: 1px dashed #cbd5e1;
+      padding: 18px;
+      border-radius: 16px;
+      text-align: center;
+    }
+
+    @media (max-width: 850px) {
+      .topbar h1 {
+        font-size: 30px;
       }
 
-      h1 {
-        font-size: 28px;
+      .content {
+        padding: 18px;
       }
 
-      #field-list {
-        columns: 1;
-      }
-
+      .stat-grid,
       .draft-layout {
         grid-template-columns: 1fr;
       }
@@ -215,79 +420,151 @@
       nav button {
         flex: 1;
       }
+
+      .toolbar input {
+        min-width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="page">
-    <div id="login-box" class="card">
+    <div id="login-box">
       <h1>PGA Draft League 🏌️</h1>
-      <p class="subtitle">Enter your league PIN to start drafting.</p>
+      <p>Enter your league PIN to start drafting.</p>
       <input type="password" id="pin" placeholder="PIN" maxlength="4" inputmode="numeric" />
       <button id="login-btn">Enter League</button>
       <p id="status"></p>
     </div>
 
-    <div id="app-box" class="card" style="display: none;">
-      <h1>PGA Draft League 🏌️</h1>
-      <p class="subtitle">Upload the field, run the draft, and track the week.</p>
+    <div id="app-box" class="shell" style="display: none;">
+      <header class="topbar">
+        <h1>PGA Draft League 🏌️</h1>
+        <p>Upload the field, track player data, and run the weekly snake draft.</p>
+      </header>
 
-      <nav>
-        <button class="tab-btn" data-tab="field-section">Field</button>
-        <button class="tab-btn" data-tab="draft-section">Draft</button>
-        <button class="tab-btn" data-tab="scores-section">Scores</button>
-      </nav>
+      <main class="content">
+        <nav>
+          <button class="tab-btn" data-tab="field-section">Field</button>
+          <button class="tab-btn" data-tab="draft-section">Draft</button>
+          <button class="tab-btn" data-tab="scores-section">Scores</button>
+        </nav>
 
-      <section id="field-section">
-        <h2>Tournament Field</h2>
-        <p>Upload a CSV with one golfer name per row.</p>
-        <input type="file" id="csv-input" accept=".csv" />
-        <p id="upload-status"></p>
-        <ul id="field-list"></ul>
-      </section>
-
-      <section id="draft-section" style="display: none;">
-        <h2>Draft Room</h2>
-
-        <div id="draft-setup">
-          <label>
-            Golfers per team:
-            <input type="number" id="roster-size" value="5" min="1" max="20" />
-          </label>
-          <br><br>
-          <button id="start-draft-btn">Flip Coin & Start Draft</button>
-        </div>
-
-        <div id="draft-board" style="display: none;">
-          <h3 id="turn-indicator"></h3>
-          <button id="reset-draft-btn">Reset Draft</button>
-
-          <h4>Available Golfers</h4>
-          <ul id="available-list"></ul>
-
-          <div class="draft-layout">
-            <div class="team-card">
-              <h4 id="team-a-header"></h4>
-              <ul id="team-a-roster"></ul>
+        <section id="field-section">
+          <div class="section-header">
+            <div>
+              <h2>Tournament Field</h2>
+              <p>Upload golfers, then use this as your weekly player research board.</p>
             </div>
+            <input type="file" id="csv-input" accept=".csv" />
+          </div>
 
-            <div class="team-card">
-              <h4 id="team-b-header"></h4>
-              <ul id="team-b-roster"></ul>
+          <p id="upload-status"></p>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span>Total Golfers</span>
+              <strong id="total-golfers">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Favorites</span>
+              <strong id="favorite-count">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Drafted</span>
+              <strong id="drafted-count">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Available</span>
+              <strong id="available-count">0</strong>
             </div>
           </div>
-        </div>
 
-        <div id="draft-complete" style="display: none;">
-          <h3>✅ Draft complete!</h3>
-        </div>
-      </section>
+          <div class="toolbar">
+            <input type="search" id="field-search" placeholder="Search golfers..." />
+            <span class="pill">Odds column ready</span>
+            <span class="pill">Stats columns ready</span>
+          </div>
 
-      <section id="scores-section" style="display: none;">
-        <h2>Scores</h2>
-        <p>Coming soon.</p>
-      </section>
+          <div class="table-wrap">
+            <table id="field-table">
+              <thead>
+                <tr>
+                  <th>Golfer</th>
+                  <th>Odds</th>
+                  <th>Best Finish This Year</th>
+                  <th>Top 10s</th>
+                  <th>Cuts Made</th>
+                  <th>SG Total</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="field-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="draft-section" style="display: none;">
+          <div class="section-header">
+            <div>
+              <h2>Draft Room</h2>
+              <p>Snake draft, live picks, and team rosters.</p>
+            </div>
+          </div>
+
+          <div id="draft-setup" class="draft-setup-card">
+            <label>
+              Golfers per team:
+              <input type="number" id="roster-size" value="5" min="1" max="20" />
+            </label>
+            <br><br>
+            <button id="start-draft-btn">Flip Coin & Start Draft</button>
+          </div>
+
+          <div id="draft-board" style="display: none;">
+            <h3 id="turn-indicator"></h3>
+            <button id="reset-draft-btn">Reset Draft</button>
+
+            <div class="draft-layout">
+              <div class="available-panel">
+                <h3>Available Golfers</h3>
+                <ul id="available-list"></ul>
+              </div>
+
+              <div class="teams-panel">
+                <div class="team-card">
+                  <h4 id="team-a-header"></h4>
+                  <ul id="team-a-roster"></ul>
+                </div>
+
+                <div class="team-card">
+                  <h4 id="team-b-header"></h4>
+                  <ul id="team-b-roster"></ul>
+                </div>
+
+                <div id="draft-complete" style="display: none;">
+                  <h3>✅ Draft complete!</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="scores-section" style="display: none;">
+          <div class="section-header">
+            <div>
+              <h2>Scores</h2>
+              <p>Coming soon. This section can become standings, payouts, or live scoring.</p>
+            </div>
+          </div>
+
+          <div class="empty-state">
+            Scores are not connected yet.
+          </div>
+        </section>
+      </main>
     </div>
   </div>
 
@@ -301,16 +578,26 @@
     const auth = getAuth();
     const CORRECT_PIN = "1999";
 
+    const fieldSearchInput = document.getElementById("field-search");
+
     document.getElementById("login-btn").addEventListener("click", async () => {
       const pin = document.getElementById("pin").value;
+
       if (pin !== CORRECT_PIN) {
         document.getElementById("status").textContent = "❌ Wrong PIN";
         return;
       }
+
       try {
         await signInAnonymously(auth);
       } catch (err) {
         document.getElementById("status").textContent = "❌ " + err.message;
+      }
+    });
+
+    document.getElementById("pin").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("login-btn").click();
       }
     });
 
@@ -352,7 +639,15 @@
 
           for (const name of names) {
             const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-            await setDoc(doc(fieldCollection, id), { name });
+            await setDoc(doc(fieldCollection, id), {
+              name,
+              odds: "",
+              bestFinish: "",
+              top10s: "",
+              cutsMade: "",
+              sgTotal: "",
+              notes: ""
+            });
           }
 
           document.getElementById("upload-status").textContent = `✅ Uploaded ${names.length} golfers.`;
@@ -360,19 +655,80 @@
       });
     });
 
+    fieldSearchInput.addEventListener("input", () => {
+      renderFieldTable();
+    });
+
     function listenToField() {
       onSnapshot(fieldCollection, (snapshot) => {
         currentField = [];
-        const list = document.getElementById("field-list");
-        list.innerHTML = "";
+
         snapshot.forEach((docSnap) => {
-          currentField.push({ id: docSnap.id, name: docSnap.data().name });
-          const li = document.createElement("li");
-          li.textContent = docSnap.data().name;
-          list.appendChild(li);
+          currentField.push({
+            id: docSnap.id,
+            name: docSnap.data().name,
+            odds: docSnap.data().odds || "",
+            bestFinish: docSnap.data().bestFinish || "",
+            top10s: docSnap.data().top10s || "",
+            cutsMade: docSnap.data().cutsMade || "",
+            sgTotal: docSnap.data().sgTotal || "",
+            notes: docSnap.data().notes || ""
+          });
         });
+
+        currentField.sort((a, b) => a.name.localeCompare(b.name));
+
+        renderFieldTable();
         renderDraftBoard();
       });
+    }
+
+    function renderFieldTable() {
+      const list = document.getElementById("field-list");
+      const search = fieldSearchInput.value.toLowerCase();
+      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
+
+      const filtered = currentField.filter((g) => g.name.toLowerCase().includes(search));
+
+      list.innerHTML = "";
+
+      if (filtered.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="8" class="muted-cell">No golfers found.</td>`;
+        list.appendChild(tr);
+      }
+
+      filtered.forEach((g) => {
+        const drafted = pickedIds.has(g.id);
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td class="golfer-name">${g.name}</td>
+          <td class="${g.odds ? "odds" : "muted-cell"}">${g.odds || "Add odds"}</td>
+          <td>${g.bestFinish || '<span class="muted-cell">Add finish</span>'}</td>
+          <td>${g.top10s || '<span class="muted-cell">Add</span>'}</td>
+          <td>${g.cutsMade || '<span class="muted-cell">Add</span>'}</td>
+          <td>${g.sgTotal || '<span class="muted-cell">Add</span>'}</td>
+          <td>${drafted ? '<span class="rank-badge">Drafted</span>' : '<span class="pill">Available</span>'}</td>
+          <td>${g.notes || '<span class="muted-cell">Add notes</span>'}</td>
+        `;
+
+        list.appendChild(tr);
+      });
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
+      const total = currentField.length;
+      const drafted = currentField.filter((g) => pickedIds.has(g.id)).length;
+
+      document.getElementById("total-golfers").textContent = total;
+      document.getElementById("favorite-count").textContent = "0";
+      document.getElementById("drafted-count").textContent = drafted;
+      document.getElementById("available-count").textContent = total - drafted;
     }
 
     const draftDocRef = doc(db, "draft", "current");
@@ -404,6 +760,7 @@
     function listenToDraft() {
       onSnapshot(draftDocRef, (docSnap) => {
         draftState = docSnap.exists() ? docSnap.data() : { status: "setup" };
+        renderFieldTable();
         renderDraftBoard();
       });
     }
@@ -412,10 +769,12 @@
       const { order, picks, rosterSize } = draftState;
       const totalPicks = picks.length;
       const totalNeeded = rosterSize * 2;
+
       if (totalPicks >= totalNeeded) return null;
 
       const round = Math.floor(totalPicks / 2);
       const posInRound = totalPicks % 2;
+
       return round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
     }
 
@@ -427,11 +786,19 @@
       const fresh = freshSnap.data();
 
       if (fresh.picks.some((p) => p.playerId === golfer.id)) {
-        alert("That golfer was just picked — try another.");
+        alert("That golfer was just picked. Try another.");
         return;
       }
 
-      const newPicks = [...fresh.picks, { team: picker, playerId: golfer.id, playerName: golfer.name }];
+      const newPicks = [
+        ...fresh.picks,
+        {
+          team: picker,
+          playerId: golfer.id,
+          playerName: golfer.name
+        }
+      ];
+
       await updateDoc(draftDocRef, { picks: newPicks });
     }
 
@@ -446,6 +813,7 @@
         setupDiv.style.display = "block";
         boardDiv.style.display = "none";
         completeDiv.style.display = "none";
+        updateStats();
         return;
       }
 
@@ -469,12 +837,21 @@
       const availableList = document.getElementById("available-list");
       availableList.innerHTML = "";
 
+      if (available.length === 0) {
+        const li = document.createElement("li");
+        li.className = "empty-state";
+        li.textContent = "No available golfers.";
+        availableList.appendChild(li);
+      }
+
       available.forEach((g) => {
         const li = document.createElement("li");
         const btn = document.createElement("button");
+
         btn.textContent = `Draft ${g.name}`;
         btn.disabled = !picker;
         btn.addEventListener("click", () => draftGolfer(g));
+
         li.appendChild(btn);
         availableList.appendChild(li);
       });
@@ -484,15 +861,22 @@
 
       const rosterA = document.getElementById("team-a-roster");
       const rosterB = document.getElementById("team-b-roster");
+
       rosterA.innerHTML = "";
       rosterB.innerHTML = "";
 
-      draftState.picks.forEach((p) => {
+      draftState.picks.forEach((p, index) => {
         const li = document.createElement("li");
-        li.textContent = p.playerName;
-        if (p.team === draftState.teamA) rosterA.appendChild(li);
-        else rosterB.appendChild(li);
+        li.textContent = `${index + 1}. ${p.playerName}`;
+
+        if (p.team === draftState.teamA) {
+          rosterA.appendChild(li);
+        } else {
+          rosterB.appendChild(li);
+        }
       });
+
+      updateStats();
     }
   </script>
 </body>
