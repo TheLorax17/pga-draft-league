@@ -31,7 +31,36 @@
 
     <section id="draft-section" style="display: none;">
       <h2>Draft</h2>
-      <p>Coming soon.</p>
+
+      <div id="draft-setup">
+        <label>Team A name: <input type="text" id="team-a-name" placeholder="Team A" /></label><br/>
+        <label>Team B name: <input type="text" id="team-b-name" placeholder="Team B" /></label><br/>
+        <label>Golfers per team: <input type="number" id="roster-size" value="5" min="1" max="20" /></label><br/>
+        <button id="start-draft-btn">Flip Coin & Start Draft</button>
+      </div>
+
+      <div id="draft-board" style="display: none;">
+        <h3 id="turn-indicator"></h3>
+        <button id="reset-draft-btn">Reset Draft (new week)</button>
+
+        <h4>Available Golfers</h4>
+        <ul id="available-list"></ul>
+
+        <div style="display:flex; gap: 40px;">
+          <div>
+            <h4 id="team-a-header"></h4>
+            <ul id="team-a-roster"></ul>
+          </div>
+          <div>
+            <h4 id="team-b-header"></h4>
+            <ul id="team-b-roster"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div id="draft-complete" style="display: none;">
+        <h3>✅ Draft complete!</h3>
+      </div>
     </section>
 
     <section id="scores-section" style="display: none;">
@@ -44,7 +73,7 @@
     import { db } from "./firebase-config.js";
     import { getAuth, signInAnonymously, onAuthStateChanged }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { collection, doc, setDoc, getDocs, deleteDoc, onSnapshot }
+    import { collection, doc, setDoc, updateDoc, getDoc, getDocs, deleteDoc, onSnapshot }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const auth = getAuth();
@@ -68,6 +97,7 @@
         document.getElementById("login-box").style.display = "none";
         document.getElementById("app-box").style.display = "block";
         listenToField();
+        listenToDraft();
       }
     });
 
@@ -79,8 +109,9 @@
       });
     });
 
-    // --- CSV upload ---
+    // --- Field / CSV upload ---
     const fieldCollection = collection(db, "tournaments", "current", "field");
+    let currentField = []; // [{id, name}]
 
     document.getElementById("csv-input").addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -94,13 +125,11 @@
 
           document.getElementById("upload-status").textContent = `Uploading ${names.length} golfers...`;
 
-          // clear existing field
           const existing = await getDocs(fieldCollection);
           for (const d of existing.docs) {
             await deleteDoc(d.ref);
           }
 
-          // add new field
           for (const name of names) {
             const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
             await setDoc(doc(fieldCollection, id), { name });
@@ -113,13 +142,132 @@
 
     function listenToField() {
       onSnapshot(fieldCollection, (snapshot) => {
+        currentField = [];
         const list = document.getElementById("field-list");
         list.innerHTML = "";
         snapshot.forEach((docSnap) => {
+          currentField.push({ id: docSnap.id, name: docSnap.data().name });
           const li = document.createElement("li");
           li.textContent = docSnap.data().name;
           list.appendChild(li);
         });
+        renderDraftBoard(); // field affects available list
+      });
+    }
+
+    // --- Draft ---
+    const draftDocRef = doc(db, "draft", "current");
+    let draftState = null;
+
+    document.getElementById("start-draft-btn").addEventListener("click", async () => {
+      const teamA = document.getElementById("team-a-name").value.trim() || "Team A";
+      const teamB = document.getElementById("team-b-name").value.trim() || "Team B";
+      const rosterSize = parseInt(document.getElementById("roster-size").value, 10) || 5;
+
+      const firstPick = Math.random() < 0.5 ? teamA : teamB;
+      const order = firstPick === teamA ? [teamA, teamB] : [teamB, teamA];
+
+      await setDoc(draftDocRef, {
+        status: "drafting",
+        rosterSize,
+        teamA,
+        teamB,
+        order,
+        picks: [],
+      });
+    });
+
+    document.getElementById("reset-draft-btn").addEventListener("click", async () => {
+      if (!confirm("Reset the draft? This clears all picks.")) return;
+      await setDoc(draftDocRef, { status: "setup" });
+    });
+
+    function listenToDraft() {
+      onSnapshot(draftDocRef, (docSnap) => {
+        draftState = docSnap.exists() ? docSnap.data() : { status: "setup" };
+        renderDraftBoard();
+      });
+    }
+
+    function currentPicker() {
+      const { order, picks, rosterSize } = draftState;
+      const totalPicks = picks.length;
+      const totalNeeded = rosterSize * 2;
+      if (totalPicks >= totalNeeded) return null;
+      const round = Math.floor(totalPicks / 2);
+      const posInRound = totalPicks % 2;
+      const picker = round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
+      return picker;
+    }
+
+    async function draftGolfer(golfer) {
+      const picker = currentPicker();
+      if (!picker) return;
+      const freshSnap = await getDoc(draftDocRef);
+      const fresh = freshSnap.data();
+      if (fresh.picks.some((p) => p.playerId === golfer.id)) {
+        alert("That golfer was just picked — try another.");
+        return;
+      }
+      const newPicks = [...fresh.picks, { team: picker, playerId: golfer.id, playerName: golfer.name }];
+      await updateDoc(draftDocRef, { picks: newPicks });
+    }
+
+    function renderDraftBoard() {
+      if (!draftState) return;
+
+      const setupDiv = document.getElementById("draft-setup");
+      const boardDiv = document.getElementById("draft-board");
+      const completeDiv = document.getElementById("draft-complete");
+
+      if (draftState.status !== "drafting") {
+        setupDiv.style.display = "block";
+        boardDiv.style.display = "none";
+        completeDiv.style.display = "none";
+        return;
+      }
+
+      setupDiv.style.display = "none";
+      boardDiv.style.display = "block";
+
+      const picker = currentPicker();
+      const turnEl = document.getElementById("turn-indicator");
+
+      if (!picker) {
+        turnEl.textContent = "";
+        completeDiv.style.display = "block";
+      } else {
+        completeDiv.style.display = "none";
+        turnEl.textContent = `👉 ${picker}'s turn to pick`;
+      }
+
+      const pickedIds = new Set(draftState.picks.map((p) => p.playerId));
+      const available = currentField.filter((g) => !pickedIds.has(g.id));
+
+      const availableList = document.getElementById("available-list");
+      availableList.innerHTML = "";
+      available.forEach((g) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.textContent = `Draft ${g.name}`;
+        btn.disabled = !picker;
+        btn.addEventListener("click", () => draftGolfer(g));
+        li.appendChild(btn);
+        availableList.appendChild(li);
+      });
+
+      document.getElementById("team-a-header").textContent = draftState.teamA;
+      document.getElementById("team-b-header").textContent = draftState.teamB;
+
+      const rosterA = document.getElementById("team-a-roster");
+      const rosterB = document.getElementById("team-b-roster");
+      rosterA.innerHTML = "";
+      rosterB.innerHTML = "";
+      draftState.picks.forEach((p) => {
+        const li = document.createElement("li");
+        li.textContent = p.playerName;
+        if (p.team === draftState.teamA) rosterA.appendChild(li);
+        else rosterB.appendChild(li);
       });
     }
   </script>
