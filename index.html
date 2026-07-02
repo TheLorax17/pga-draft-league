@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>PGA Draft League</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <div id="login-box">
@@ -13,16 +14,41 @@
 
   <div id="app-box" style="display: none;">
     <h1>PGA Draft League 🏌️</h1>
-    <p>✅ Logged in! (This is where the app will go.)</p>
+
+    <nav>
+      <button class="tab-btn" data-tab="field-section">Field</button>
+      <button class="tab-btn" data-tab="draft-section">Draft</button>
+      <button class="tab-btn" data-tab="scores-section">Scores</button>
+    </nav>
+
+    <section id="field-section">
+      <h2>Tournament Field</h2>
+      <p>Upload a CSV with one golfer name per row (a header row like "name" is fine, it'll be skipped).</p>
+      <input type="file" id="csv-input" accept=".csv" />
+      <p id="upload-status"></p>
+      <ul id="field-list"></ul>
+    </section>
+
+    <section id="draft-section" style="display: none;">
+      <h2>Draft</h2>
+      <p>Coming soon.</p>
+    </section>
+
+    <section id="scores-section" style="display: none;">
+      <h2>Scores</h2>
+      <p>Coming soon.</p>
+    </section>
   </div>
 
   <script type="module">
     import { db } from "./firebase-config.js";
     import { getAuth, signInAnonymously, onAuthStateChanged }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { collection, doc, setDoc, getDocs, deleteDoc, onSnapshot }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const auth = getAuth();
-    const CORRECT_PIN = "1999"; // change this to your own PIN
+    const CORRECT_PIN = "1234"; // your PIN
 
     document.getElementById("login-btn").addEventListener("click", async () => {
       const pin = document.getElementById("pin").value;
@@ -41,8 +67,61 @@
       if (user) {
         document.getElementById("login-box").style.display = "none";
         document.getElementById("app-box").style.display = "block";
+        listenToField();
       }
     });
+
+    // --- Tab switching ---
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("section").forEach((s) => (s.style.display = "none"));
+        document.getElementById(btn.dataset.tab).style.display = "block";
+      });
+    });
+
+    // --- CSV upload ---
+    const fieldCollection = collection(db, "tournaments", "current", "field");
+
+    document.getElementById("csv-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        complete: async (results) => {
+          const names = results.data
+            .map((row) => (row[0] || "").trim())
+            .filter((name) => name && name.toLowerCase() !== "name" && name.toLowerCase() !== "golfer");
+
+          document.getElementById("upload-status").textContent = `Uploading ${names.length} golfers...`;
+
+          // clear existing field
+          const existing = await getDocs(fieldCollection);
+          for (const d of existing.docs) {
+            await deleteDoc(d.ref);
+          }
+
+          // add new field
+          for (const name of names) {
+            const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            await setDoc(doc(fieldCollection, id), { name });
+          }
+
+          document.getElementById("upload-status").textContent = `✅ Uploaded ${names.length} golfers.`;
+        },
+      });
+    });
+
+    function listenToField() {
+      onSnapshot(fieldCollection, (snapshot) => {
+        const list = document.getElementById("field-list");
+        list.innerHTML = "";
+        snapshot.forEach((docSnap) => {
+          const li = document.createElement("li");
+          li.textContent = docSnap.data().name;
+          list.appendChild(li);
+        });
+      });
+    }
   </script>
 </body>
 </html>
