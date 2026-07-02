@@ -1,512 +1,1091 @@
-<style>
-  * { box-sizing: border-box; }
-
-  :root {
-    --bg-0: #111713;
-    --bg-1: #171f1a;
-    --bg-2: #202922;
-    --panel: #1b231e;
-    --panel-2: #222c25;
-    --text: #e8eee9;
-    --muted: #9aa89f;
-    --border: #354139;
-    --green: #82a856;
-    --green-bright: #a6d96a;
-    --amber: #d7a441;
-    --danger: #a33a32;
-    --black: #090d0a;
-  }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-    background:
-      radial-gradient(circle at top left, rgba(130, 168, 86, 0.18), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(215, 164, 65, 0.10), transparent 30%),
-      linear-gradient(135deg, #0b100d, #18211b 55%, #111713);
-    color: var(--text);
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 34px 34px;
-    mask-image: linear-gradient(to bottom, black, transparent 85%);
-  }
-
-  button, input, textarea {
-    font: inherit;
-  }
-
-  button {
-    border: 1px solid rgba(166, 217, 106, 0.35);
-    cursor: pointer;
-    border-radius: 6px;
-    padding: 12px 16px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    background: linear-gradient(180deg, #6f9249, #4f6f35);
-    color: #f4ffe9;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-  }
-
-  button:hover {
-    background: linear-gradient(180deg, #8aad5d, #5d7f3e);
-  }
-
-  button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  input,
-  textarea {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 14px;
-    background: #121914;
-    color: var(--text);
-  }
-
-  input::placeholder,
-  textarea::placeholder {
-    color: #7d8a82;
-  }
-
-  textarea {
-    width: 100%;
-    min-height: 180px;
-    resize: vertical;
-    line-height: 1.4;
-  }
-
-  .page {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 28px 18px;
-    position: relative;
-    z-index: 1;
-  }
-
-  #login-box {
-    max-width: 440px;
-    margin: 12vh auto;
-    padding: 32px;
-    text-align: center;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
-  }
-
-  #login-box h1 {
-    color: var(--green-bright);
-    margin: 0 0 8px;
-    font-size: 34px;
-    letter-spacing: -0.03em;
-  }
-
-  #login-box p {
-    color: var(--muted);
-  }
-
-  #pin {
-    width: 100%;
-    margin: 18px 0 12px;
-    text-align: center;
-    font-size: 24px;
-    letter-spacing: 7px;
-  }
-
-  #login-btn {
-    width: 100%;
-  }
-
-  .shell {
-    background: rgba(18, 25, 20, 0.96);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-    overflow: hidden;
-  }
-
-  .topbar {
-    padding: 30px;
-    background:
-      linear-gradient(90deg, rgba(9,13,10,0.94), rgba(31,44,35,0.96)),
-      repeating-linear-gradient(
-        135deg,
-        rgba(166,217,106,0.08) 0,
-        rgba(166,217,106,0.08) 1px,
-        transparent 1px,
-        transparent 12px
-      );
-    color: white;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
-
-  .topbar::after {
-    content: "LIVE DRAFT SYSTEM";
-    position: absolute;
-    right: 28px;
-    top: 28px;
-    color: var(--amber);
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 0.12em;
-  }
-
-  .topbar h1 {
-    margin: 0;
-    font-size: 40px;
-    letter-spacing: -0.05em;
-    color: #f1f6ef;
-  }
-
-  .topbar p {
-    margin: 8px 0 0;
-    color: var(--muted);
-  }
-
-  .content {
-    padding: 24px;
-  }
-
-  nav {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .tab-btn {
-    background: #161f19;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .tab-btn:hover {
-    background: #223026;
-    color: var(--green-bright);
-  }
-
-  section {
-    background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
-  .section-header h2 {
-    margin: 0 0 6px;
-    font-size: 26px;
-    color: var(--text);
-  }
-
-  .section-header p {
-    margin: 0;
-    color: var(--muted);
-  }
-
-  .upload-box {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .upload-box label {
-    color: var(--muted);
-    font-weight: 800;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .odds-import-box {
-    background: #151d18;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--amber);
-    border-radius: 10px;
-    padding: 18px;
-    margin: 18px 0;
-  }
-
-  .odds-import-box h3 {
-    margin: 0 0 8px;
-    color: var(--amber);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .odds-import-box p {
-    color: var(--muted);
-    margin: 0 0 12px;
-  }
-
-  .import-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-
-  #clear-odds-btn {
-    background: linear-gradient(180deg, #4b5563, #303740);
-    border-color: #56616d;
-  }
-
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 12px;
-    margin: 18px 0;
-  }
-
-  .stat-card {
-    background: linear-gradient(180deg, #202a23, #161f19);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: var(--green);
-  }
-
-  .stat-card span {
-    display: block;
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .stat-card strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 28px;
-    color: var(--green-bright);
-  }
-
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 18px 0;
-  }
-
-  .toolbar input {
-    min-width: 260px;
-    flex: 1;
-  }
-
-  .pill {
-    display: inline-flex;
-    padding: 8px 11px;
-    border-radius: 999px;
-    background: #121914;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .table-wrap {
-    overflow-x: auto;
-    border-radius: 10px;
-    background: #121914;
-    border: 1px solid var(--border);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 980px;
-  }
-
-  th {
-    background: #0b100d;
-    color: var(--green-bright);
-    text-align: left;
-    padding: 14px 16px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--border);
-  }
-
-  td {
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(53, 65, 57, 0.75);
-    color: var(--text);
-  }
-
-  tbody tr:hover {
-    background: rgba(130, 168, 86, 0.08);
-  }
-
-  .golfer-name {
-    font-weight: 900;
-    color: #f2f7f2;
-  }
-
-  .muted-cell {
-    color: #77857d;
-    font-style: italic;
-  }
-
-  .odds {
-    font-weight: 900;
-    color: var(--green-bright);
-  }
-
-  .rank-badge {
-    display: inline-block;
-    padding: 6px 9px;
-    border-radius: 999px;
-    background: rgba(215, 164, 65, 0.16);
-    color: var(--amber);
-    border: 1px solid rgba(215, 164, 65, 0.35);
-    font-weight: 900;
-    font-size: 12px;
-    text-transform: uppercase;
-  }
-
-  .draft-layout {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 18px;
-    align-items: start;
-  }
-
-  .available-panel,
-  .teams-panel,
-  .draft-setup-card {
-    background: #151d18;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
-  }
-
-  #available-list,
-  #team-a-roster,
-  #team-b-roster {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  #available-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 10px;
-  }
-
-  #available-list button {
-    width: 100%;
-    text-align: left;
-    background: #111713;
-    color: var(--green-bright);
-    border: 1px solid var(--border);
-  }
-
-  #available-list button:hover {
-    border-color: var(--green-bright);
-    background: #1d2a20;
-  }
-
-  .team-card {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 14px;
-    background: #111713;
-  }
-
-  .team-card h4 {
-    margin: 0 0 12px;
-    color: var(--amber);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .team-card li {
-    background: #1a231d;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    font-weight: 800;
-    color: var(--text);
-  }
-
-  #turn-indicator {
-    background: rgba(130, 168, 86, 0.16);
-    color: var(--green-bright);
-    padding: 16px;
-    border-radius: 10px;
-    border: 1px solid rgba(166, 217, 106, 0.35);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  #reset-draft-btn {
-    background: linear-gradient(180deg, #a33a32, #762720);
-    border-color: #bd5148;
-  }
-
-  #status,
-  #upload-status,
-  #odds-status {
-    font-weight: 900;
-    color: var(--green-bright);
-  }
-
-  @media (max-width: 850px) {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PGA Draft League</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg-0: #111713;
+      --bg-1: #171f1a;
+      --bg-2: #202922;
+      --panel: #1b231e;
+      --panel-2: #222c25;
+      --text: #e8eee9;
+      --muted: #9aa89f;
+      --border: #354139;
+      --green: #82a856;
+      --green-bright: #a6d96a;
+      --amber: #d7a441;
+      --danger: #a33a32;
+      --black: #090d0a;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(130,168,86,.18), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(215,164,65,.10), transparent 30%),
+        linear-gradient(135deg, #0b100d, #18211b 55%, #111713);
+      color: var(--text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
+
+    button, input, textarea { font: inherit; }
+
+    button {
+      border: 1px solid rgba(166,217,106,.35);
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      background: linear-gradient(180deg, #6f9249, #4f6f35);
+      color: #f4ffe9;
+    }
+
+    button:hover { background: linear-gradient(180deg, #8aad5d, #5d7f3e); }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    input, textarea {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      background: #121914;
+      color: var(--text);
+    }
+
+    input::placeholder, textarea::placeholder { color: #7d8a82; }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    #login-box {
+      max-width: 440px;
+      margin: 12vh auto;
+      padding: 32px;
+      text-align: center;
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.45);
+    }
+
+    #login-box h1 {
+      color: var(--green-bright);
+      margin: 0 0 8px;
+      font-size: 34px;
+    }
+
+    #login-box p { color: var(--muted); }
+
+    #pin {
+      width: 100%;
+      margin: 18px 0 12px;
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 7px;
+    }
+
+    #login-btn { width: 100%; }
+
+    .shell {
+      background: rgba(18,25,20,.96);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.48);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 30px;
+      background:
+        linear-gradient(90deg, rgba(9,13,10,.94), rgba(31,44,35,.96)),
+        repeating-linear-gradient(135deg, rgba(166,217,106,.08) 0, rgba(166,217,106,.08) 1px, transparent 1px, transparent 12px);
+      color: white;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
     .topbar::after {
-      position: static;
-      display: block;
+      content: "LIVE DRAFT SYSTEM";
+      position: absolute;
+      right: 28px;
+      top: 28px;
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 40px;
+      letter-spacing: -.05em;
+      color: #f1f6ef;
+    }
+
+    .topbar p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .content { padding: 24px; }
+
+    nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: #161f19;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn:hover {
+      background: #223026;
+      color: var(--green-bright);
+    }
+
+    section {
+      background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      color: var(--text);
+    }
+
+    .section-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .upload-box {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .upload-box label {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .odds-import-box {
+      background: #151d18;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--amber);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 18px 0;
+    }
+
+    .odds-import-box h3 {
+      margin: 0 0 8px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .odds-import-box p {
+      color: var(--muted);
+      margin: 0 0 12px;
+    }
+
+    .import-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-top: 12px;
     }
 
-    .stat-grid,
-    .draft-layout {
-      grid-template-columns: 1fr;
+    #clear-odds-btn {
+      background: linear-gradient(180deg, #4b5563, #303740);
+      border-color: #56616d;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, #202a23, #161f19);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--green);
+    }
+
+    .stat-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 28px;
+      color: var(--green-bright);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0;
     }
 
     .toolbar input {
-      min-width: 100%;
-    }
-
-    nav button {
+      min-width: 260px;
       flex: 1;
     }
-  }
-</style>
+
+    .pill {
+      display: inline-flex;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #121914;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      background: #121914;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th {
+      background: #0b100d;
+      color: var(--green-bright);
+      text-align: left;
+      padding: 14px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(53,65,57,.75);
+      color: var(--text);
+    }
+
+    tbody tr:hover { background: rgba(130,168,86,.08); }
+
+    .golfer-name {
+      font-weight: 900;
+      color: #f2f7f2;
+    }
+
+    .muted-cell {
+      color: #77857d;
+      font-style: italic;
+    }
+
+    .odds {
+      font-weight: 900;
+      color: var(--green-bright);
+    }
+
+    .rank-badge {
+      display: inline-block;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(215,164,65,.16);
+      color: var(--amber);
+      border: 1px solid rgba(215,164,65,.35);
+      font-weight: 900;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .draft-layout {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .available-panel, .teams-panel, .draft-setup-card {
+      background: #151d18;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    #available-list, #team-a-roster, #team-b-roster {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #available-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    #available-list button {
+      width: 100%;
+      text-align: left;
+      background: #111713;
+      color: var(--green-bright);
+      border: 1px solid var(--border);
+    }
+
+    #available-list button:hover {
+      border-color: var(--green-bright);
+      background: #1d2a20;
+    }
+
+    .team-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #111713;
+    }
+
+    .team-card h4 {
+      margin: 0 0 12px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .team-card li {
+      background: #1a231d;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    #turn-indicator {
+      background: rgba(130,168,86,.16);
+      color: var(--green-bright);
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(166,217,106,.35);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    #reset-draft-btn {
+      background: linear-gradient(180deg, #a33a32, #762720);
+      border-color: #bd5148;
+    }
+
+    #status, #upload-status, #odds-status {
+      font-weight: 900;
+      color: var(--green-bright);
+    }
+
+    @media (max-width: 850px) {
+      .topbar::after {
+        position: static;
+        display: block;
+        margin-top: 12px;
+      }
+
+      .stat-grid, .draft-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar input {
+        min-width: 100%;
+      }
+
+      nav button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div id="login-box">
+      <h1>PGA Draft League 🏌️</h1>
+      <p>Enter your league PIN to start drafting.</p>
+      <input type="password" id="pin" placeholder="PIN" maxlength="4" inputmode="numeric" />
+      <button id="login-btn">Enter League</button>
+      <p id="status"></p>
+    </div>
+
+    <div id="app-box" class="shell" style="display: none;">
+      <header class="topbar">
+        <h1>PGA Draft League 🏌️</h1>
+        <p>Upload the field, paste DraftKings odds, and run the weekly snake draft.</p>
+      </header>
+
+      <main class="content">
+        <nav>
+          <button class="tab-btn" data-tab="field-section">Field</button>
+          <button class="tab-btn" data-tab="draft-section">Draft</button>
+          <button class="tab-btn" data-tab="scores-section">Scores</button>
+        </nav>
+
+        <section id="field-section">
+          <div class="section-header">
+            <div>
+              <h2>Tournament Field</h2>
+              <p>Upload your golfer list first, then paste the DraftKings odds text.</p>
+            </div>
+
+            <div class="upload-box">
+              <label>
+                Field CSV
+                <input type="file" id="csv-input" accept=".csv" />
+              </label>
+            </div>
+          </div>
+
+          <p id="upload-status"></p>
+
+          <div class="odds-import-box">
+            <h3>Paste DraftKings Odds</h3>
+            <p>Paste player name, outright, top 5, and top 10 odds.</p>
+            <textarea id="dk-odds-text" placeholder="Paste DraftKings odds text here..."></textarea>
+            <div class="import-actions">
+              <button id="import-odds-btn">Import Odds</button>
+              <button id="clear-odds-btn">Clear Odds Box</button>
+            </div>
+            <p id="odds-status"></p>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span>Total Golfers</span>
+              <strong id="total-golfers">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Odds Added</span>
+              <strong id="odds-count">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Drafted</span>
+              <strong id="drafted-count">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Available</span>
+              <strong id="available-count">0</strong>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <input type="search" id="field-search" placeholder="Search golfers..." />
+            <span class="pill">Win / Top 5 / Top 10 odds ready</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Golfer</th>
+                  <th>Win</th>
+                  <th>Top 5</th>
+                  <th>Top 10</th>
+                  <th>Best Finish This Year</th>
+                  <th>Top 10s</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="field-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="draft-section" style="display: none;">
+          <h2>Draft Room</h2>
+
+          <div id="draft-setup" class="draft-setup-card">
+            <label>
+              Golfers per team:
+              <input type="number" id="roster-size" value="5" min="1" max="20" />
+            </label>
+            <br><br>
+            <button id="start-draft-btn">Flip Coin & Start Draft</button>
+          </div>
+
+          <div id="draft-board" style="display: none;">
+            <h3 id="turn-indicator"></h3>
+            <button id="reset-draft-btn">Reset Draft</button>
+            <br><br>
+
+            <div class="draft-layout">
+              <div class="available-panel">
+                <h3>Available Golfers</h3>
+                <ul id="available-list"></ul>
+              </div>
+
+              <div class="teams-panel">
+                <div class="team-card">
+                  <h4 id="team-a-header"></h4>
+                  <ul id="team-a-roster"></ul>
+                </div>
+
+                <div class="team-card">
+                  <h4 id="team-b-header"></h4>
+                  <ul id="team-b-roster"></ul>
+                </div>
+
+                <div id="draft-complete" style="display: none;">
+                  <h3>✅ Draft complete!</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="scores-section" style="display: none;">
+          <h2>Scores</h2>
+          <p>Coming soon.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { collection, doc, setDoc, updateDoc, getDoc, getDocs, deleteDoc, onSnapshot }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const auth = getAuth();
+    const CORRECT_PIN = "1999";
+
+    const fieldCollection = collection(db, "tournaments", "current", "field");
+    const draftDocRef = doc(db, "draft", "current");
+
+    let currentField = [];
+    let draftState = null;
+
+    const fieldSearchInput = document.getElementById("field-search");
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const pin = document.getElementById("pin").value;
+
+      if (pin !== CORRECT_PIN) {
+        document.getElementById("status").textContent = "❌ Wrong PIN";
+        return;
+      }
+
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        document.getElementById("status").textContent = "❌ " + err.message;
+      }
+    });
+
+    document.getElementById("pin").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("login-btn").click();
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("login-box").style.display = "none";
+        document.getElementById("app-box").style.display = "block";
+        listenToField();
+        listenToDraft();
+      }
+    });
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("section").forEach((s) => (s.style.display = "none"));
+        document.getElementById(btn.dataset.tab).style.display = "block";
+      });
+    });
+
+    function normalizeName(name) {
+      if (!name) return "";
+
+      const suffixes = ["jr", "sr", "ii", "iii", "iv"];
+
+      let clean = String(name)
+        .replace(/[.,']/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      let parts = clean.split(" ").filter(Boolean);
+      parts = parts.filter((part) => !suffixes.includes(part));
+
+      return parts.sort().join("-");
+    }
+
+    function createIdFromName(name) {
+      return String(name)
+        .toLowerCase()
+        .trim()
+        .replace(/[.,']/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    function isOddsLine(line) {
+      return /^[+-]\d+$/.test(line.trim());
+    }
+
+    function isLikelyPlayerName(line) {
+      const badWords = [
+        "john deere",
+        "wed ",
+        "outright",
+        "top 5",
+        "top 10",
+        "including ties",
+        "winner"
+      ];
+
+      const clean = line.trim().toLowerCase();
+
+      if (!clean) return false;
+      if (isOddsLine(clean)) return false;
+      if (badWords.some((word) => clean.includes(word))) return false;
+      if (/\d/.test(clean)) return false;
+
+      return true;
+    }
+
+    function parseDraftKingsOddsText(text) {
+      const lines = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const parsed = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const possibleName = lines[i];
+
+        if (!isLikelyPlayerName(possibleName)) continue;
+
+        const odds = [];
+        let j = i + 1;
+
+        while (j < lines.length && odds.length < 3) {
+          if (isOddsLine(lines[j])) {
+            odds.push(lines[j]);
+          } else if (isLikelyPlayerName(lines[j])) {
+            break;
+          }
+          j++;
+        }
+
+        if (odds.length === 3) {
+          parsed.push({
+            name: possibleName,
+            winOdds: odds[0],
+            top5Odds: odds[1],
+            top10Odds: odds[2]
+          });
+          i = j - 1;
+        }
+      }
+
+      return parsed;
+    }
+
+    document.getElementById("csv-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        complete: async (results) => {
+          const names = results.data
+            .map((row) => (row[0] || "").trim())
+            .filter((name) =>
+              name &&
+              name.toLowerCase() !== "name" &&
+              name.toLowerCase() !== "golfer" &&
+              name.toLowerCase() !== "player"
+            );
+
+          document.getElementById("upload-status").textContent = `Uploading ${names.length} golfers...`;
+
+          const existing = await getDocs(fieldCollection);
+          for (const d of existing.docs) await deleteDoc(d.ref);
+
+          for (const name of names) {
+            const id = createIdFromName(name);
+
+            await setDoc(doc(fieldCollection, id), {
+              name,
+              normalizedName: normalizeName(name),
+              winOdds: "",
+              top5Odds: "",
+              top10Odds: "",
+              bestFinish: "",
+              top10s: "",
+              notes: ""
+            });
+          }
+
+          document.getElementById("upload-status").textContent = `✅ Uploaded ${names.length} golfers.`;
+        }
+      });
+    });
+
+    document.getElementById("import-odds-btn").addEventListener("click", async () => {
+      const text = document.getElementById("dk-odds-text").value;
+
+      if (!text.trim()) {
+        document.getElementById("odds-status").textContent = "Paste the DraftKings odds first.";
+        return;
+      }
+
+      const parsedOdds = parseDraftKingsOddsText(text);
+
+      if (parsedOdds.length === 0) {
+        document.getElementById("odds-status").textContent = "Could not find odds in that text.";
+        return;
+      }
+
+      const fieldByNormalizedName = new Map();
+
+      currentField.forEach((golfer) => {
+        fieldByNormalizedName.set(normalizeName(golfer.name), golfer);
+      });
+
+      let matched = 0;
+      let missed = 0;
+      const missedNames = [];
+
+      for (const item of parsedOdds) {
+        const matchedGolfer = fieldByNormalizedName.get(normalizeName(item.name));
+
+        if (!matchedGolfer) {
+          missed++;
+          missedNames.push(item.name);
+          continue;
+        }
+
+        await updateDoc(doc(fieldCollection, matchedGolfer.id), {
+          winOdds: item.winOdds,
+          top5Odds: item.top5Odds,
+          top10Odds: item.top10Odds
+        });
+
+        matched++;
+      }
+
+      let message = `✅ Imported odds. Matched ${matched}. Missed ${missed}.`;
+
+      if (missedNames.length) {
+        message += ` Missed: ${missedNames.slice(0, 8).join(", ")}`;
+        if (missedNames.length > 8) message += `, and ${missedNames.length - 8} more`;
+      }
+
+      document.getElementById("odds-status").textContent = message;
+    });
+
+    document.getElementById("clear-odds-btn").addEventListener("click", () => {
+      document.getElementById("dk-odds-text").value = "";
+      document.getElementById("odds-status").textContent = "";
+    });
+
+    fieldSearchInput.addEventListener("input", renderFieldTable);
+
+    function listenToField() {
+      onSnapshot(fieldCollection, (snapshot) => {
+        currentField = [];
+
+        snapshot.forEach((docSnap) => {
+          currentField.push({
+            id: docSnap.id,
+            name: docSnap.data().name,
+            winOdds: docSnap.data().winOdds || "",
+            top5Odds: docSnap.data().top5Odds || "",
+            top10Odds: docSnap.data().top10Odds || "",
+            bestFinish: docSnap.data().bestFinish || "",
+            top10s: docSnap.data().top10s || "",
+            notes: docSnap.data().notes || ""
+          });
+        });
+
+        currentField.sort((a, b) => a.name.localeCompare(b.name));
+
+        renderFieldTable();
+        renderDraftBoard();
+      });
+    }
+
+    function renderFieldTable() {
+      const list = document.getElementById("field-list");
+      const search = fieldSearchInput.value.toLowerCase();
+      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
+
+      const filtered = currentField.filter((g) =>
+        g.name.toLowerCase().includes(search)
+      );
+
+      list.innerHTML = "";
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<tr><td colspan="8" class="muted-cell">No golfers found.</td></tr>`;
+      }
+
+      filtered.forEach((g) => {
+        const drafted = pickedIds.has(g.id);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="golfer-name">${g.name}</td>
+          <td class="${g.winOdds ? "odds" : "muted-cell"}">${g.winOdds || "No odds"}</td>
+          <td class="${g.top5Odds ? "odds" : "muted-cell"}">${g.top5Odds || "No odds"}</td>
+          <td class="${g.top10Odds ? "odds" : "muted-cell"}">${g.top10Odds || "No odds"}</td>
+          <td>${g.bestFinish || '<span class="muted-cell">Add finish</span>'}</td>
+          <td>${g.top10s || '<span class="muted-cell">Add</span>'}</td>
+          <td>${drafted ? '<span class="rank-badge">Drafted</span>' : '<span class="pill">Available</span>'}</td>
+          <td>${g.notes || '<span class="muted-cell">Add notes</span>'}</td>
+        `;
+
+        list.appendChild(tr);
+      });
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
+
+      const total = currentField.length;
+      const drafted = currentField.filter((g) => pickedIds.has(g.id)).length;
+      const oddsCount = currentField.filter((g) => g.winOdds || g.top5Odds || g.top10Odds).length;
+
+      document.getElementById("total-golfers").textContent = total;
+      document.getElementById("odds-count").textContent = oddsCount;
+      document.getElementById("drafted-count").textContent = drafted;
+      document.getElementById("available-count").textContent = total - drafted;
+    }
+
+    document.getElementById("start-draft-btn").addEventListener("click", async () => {
+      const teamA = "Chenny";
+      const teamB = "Juice";
+      const rosterSize = parseInt(document.getElementById("roster-size").value, 10) || 5;
+
+      const firstPick = Math.random() < 0.5 ? teamA : teamB;
+      const order = firstPick === teamA ? [teamA, teamB] : [teamB, teamA];
+
+      await setDoc(draftDocRef, {
+        status: "drafting",
+        rosterSize,
+        teamA,
+        teamB,
+        order,
+        picks: []
+      });
+    });
+
+    document.getElementById("reset-draft-btn").addEventListener("click", async () => {
+      if (!confirm("Reset the draft? This clears all picks.")) return;
+      await setDoc(draftDocRef, { status: "setup" });
+    });
+
+    function listenToDraft() {
+      onSnapshot(draftDocRef, (docSnap) => {
+        draftState = docSnap.exists() ? docSnap.data() : { status: "setup" };
+        renderFieldTable();
+        renderDraftBoard();
+      });
+    }
+
+    function currentPicker() {
+      const { order, picks, rosterSize } = draftState;
+      const totalPicks = picks.length;
+      const totalNeeded = rosterSize * 2;
+
+      if (totalPicks >= totalNeeded) return null;
+
+      const round = Math.floor(totalPicks / 2);
+      const posInRound = totalPicks % 2;
+
+      return round % 2 === 0 ? order[posInRound] : order[1 - posInRound];
+    }
+
+    async function draftGolfer(golfer) {
+      const picker = currentPicker();
+      if (!picker) return;
+
+      const freshSnap = await getDoc(draftDocRef);
+      const fresh = freshSnap.data();
+
+      if (fresh.picks.some((p) => p.playerId === golfer.id)) {
+        alert("That golfer was just picked. Try another.");
+        return;
+      }
+
+      const newPicks = [
+        ...fresh.picks,
+        {
+          team: picker,
+          playerId: golfer.id,
+          playerName: golfer.name
+        }
+      ];
+
+      await updateDoc(draftDocRef, { picks: newPicks });
+    }
+
+    function renderDraftBoard() {
+      if (!draftState) return;
+
+      const setupDiv = document.getElementById("draft-setup");
+      const boardDiv = document.getElementById("draft-board");
+      const completeDiv = document.getElementById("draft-complete");
+
+      if (draftState.status !== "drafting") {
+        setupDiv.style.display = "block";
+        boardDiv.style.display = "none";
+        completeDiv.style.display = "none";
+        updateStats();
+        return;
+      }
+
+      setupDiv.style.display = "none";
+      boardDiv.style.display = "block";
+
+      const picker = currentPicker();
+      const turnEl = document.getElementById("turn-indicator");
+
+      if (!picker) {
+        turnEl.textContent = "";
+        completeDiv.style.display = "block";
+      } else {
+        completeDiv.style.display = "none";
+        turnEl.textContent = `👉 ${picker}'s turn to pick`;
+      }
+
+      const pickedIds = new Set(draftState.picks.map((p) => p.playerId));
+      const available = currentField.filter((g) => !pickedIds.has(g.id));
+
+      const availableList = document.getElementById("available-list");
+      availableList.innerHTML = "";
+
+      available.forEach((g) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+
+        btn.textContent = g.winOdds
+          ? `Draft ${g.name} (${g.winOdds})`
+          : `Draft ${g.name}`;
+
+        btn.disabled = !picker;
+        btn.addEventListener("click", () => draftGolfer(g));
+
+        li.appendChild(btn);
+        availableList.appendChild(li);
+      });
+
+      document.getElementById("team-a-header").textContent = draftState.teamA;
+      document.getElementById("team-b-header").textContent = draftState.teamB;
+
+      const rosterA = document.getElementById("team-a-roster");
+      const rosterB = document.getElementById("team-b-roster");
+
+      rosterA.innerHTML = "";
+      rosterB.innerHTML = "";
+
+      draftState.picks.forEach((p, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${p.playerName}`;
+
+        if (p.team === draftState.teamA) rosterA.appendChild(li);
+        else rosterB.appendChild(li);
+      });
+
+      updateStats();
+    }
+  </script>
+</body>
+</html>
