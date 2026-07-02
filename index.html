@@ -4,23 +4,45 @@
   <title>PGA Draft League</title>
 </head>
 <body>
-  <h1>PGA Draft League 🏌️</h1>
-  <p id="status">Connecting to Firebase...</p>
+  <div id="login-box">
+    <h1>PGA Draft League 🏌️</h1>
+    <input type="password" id="pin" placeholder="Enter PIN" maxlength="4" inputmode="numeric" />
+    <button id="login-btn">Enter</button>
+    <p id="status"></p>
+  </div>
+
+  <div id="app-box" style="display: none;">
+    <h1>PGA Draft League 🏌️</h1>
+    <p>✅ Logged in! (This is where the app will go.)</p>
+  </div>
 
   <script type="module">
     import { db } from "./firebase-config.js";
-    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    async function testConnection() {
-      try {
-        await addDoc(collection(db, "connectionTest"), { time: new Date().toISOString() });
-        document.getElementById("status").textContent = "✅ Connected to Firebase!";
-      } catch (err) {
-        document.getElementById("status").textContent = "❌ Error: " + err.message;
-        console.error(err);
+    const auth = getAuth();
+    const CORRECT_PIN = "1999"; // change this to your own PIN
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const pin = document.getElementById("pin").value;
+      if (pin !== CORRECT_PIN) {
+        document.getElementById("status").textContent = "❌ Wrong PIN";
+        return;
       }
-    }
-    testConnection();
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        document.getElementById("status").textContent = "❌ " + err.message;
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("login-box").style.display = "none";
+        document.getElementById("app-box").style.display = "block";
+      }
+    });
   </script>
 </body>
 </html>
