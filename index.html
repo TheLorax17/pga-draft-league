@@ -225,7 +225,8 @@
       letter-spacing: .04em;
     }
 
-    .odds-import-box {
+    .odds-import-box,
+    .scores-upload-box {
       background: #151d18;
       border: 1px solid var(--border);
       border-left: 4px solid var(--amber);
@@ -234,14 +235,16 @@
       margin: 18px 0;
     }
 
-    .odds-import-box h3 {
+    .odds-import-box h3,
+    .scores-upload-box h3 {
       margin: 0 0 8px;
       color: var(--amber);
       text-transform: uppercase;
       letter-spacing: .06em;
     }
 
-    .odds-import-box p {
+    .odds-import-box p,
+    .scores-upload-box p {
       color: var(--muted);
       margin: 0 0 12px;
     }
@@ -366,9 +369,15 @@
       font-style: italic;
     }
 
-    .odds {
+    .odds,
+    .score-good {
       font-weight: 900;
       color: var(--green-bright);
+    }
+
+    .score-bad {
+      font-weight: 900;
+      color: #ff7b72;
     }
 
     .rank-badge {
@@ -415,6 +424,8 @@
       background: #111713;
       color: var(--green-bright);
       border: 1px solid var(--border);
+      text-transform: none;
+      letter-spacing: 0;
     }
 
     #available-list button:hover {
@@ -462,7 +473,7 @@
       border-color: #bd5148;
     }
 
-    #status, #upload-status, #odds-status {
+    #status, #upload-status, #odds-status, #scores-status {
       font-weight: 900;
       color: var(--green-bright);
     }
@@ -502,7 +513,7 @@
     <div id="app-box" class="shell" style="display: none;">
       <header class="topbar">
         <h1>PGA Draft League 🏌️</h1>
-        <p>Upload the field, paste DraftKings odds, and run the weekly snake draft.</p>
+        <p>Upload the field, paste odds, draft your teams, and track live scores.</p>
       </header>
 
       <main class="content">
@@ -516,7 +527,7 @@
           <div class="section-header">
             <div>
               <h2>Tournament Field</h2>
-              <p>Upload your golfer list first, then paste the DraftKings odds text.</p>
+              <p>Upload your golfer list first, then paste DraftKings odds text.</p>
             </div>
 
             <div class="upload-box">
@@ -561,7 +572,7 @@
 
           <div class="toolbar">
             <input type="search" id="field-search" placeholder="Search golfers..." />
-            <span class="pill">Win / Top 5 / Top 10 odds ready</span>
+            <span class="pill">Sorted by last name</span>
           </div>
 
           <div class="table-wrap">
@@ -626,8 +637,69 @@
         </section>
 
         <section id="scores-section" style="display: none;">
-          <h2>Scores</h2>
-          <p>Coming soon.</p>
+          <div class="section-header">
+            <div>
+              <h2>Scores Command Center</h2>
+              <p>Upload a scoring CSV with columns like Name, Position, Thru, R1, R2, R3, R4, Total.</p>
+            </div>
+
+            <div class="upload-box">
+              <label>
+                Scores CSV
+                <input type="file" id="scores-input" accept=".csv" />
+              </label>
+            </div>
+          </div>
+
+          <p id="scores-status"></p>
+
+          <div class="scores-upload-box">
+            <h3>Expected Score Sheet</h3>
+            <p>Minimum required column: Name. Recommended columns: Position, Thru, R1, R2, R3, R4, Total. Names will match to your field automatically.</p>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span>Score Rows</span>
+              <strong id="score-rows-count">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Team A Total</span>
+              <strong id="team-a-score">--</strong>
+            </div>
+            <div class="stat-card">
+              <span>Team B Total</span>
+              <strong id="team-b-score">--</strong>
+            </div>
+            <div class="stat-card">
+              <span>Leader</span>
+              <strong id="score-leader">--</strong>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <input type="search" id="scores-search" placeholder="Search scores..." />
+            <span class="pill">CSV scoring mode</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Golfer</th>
+                  <th>Position</th>
+                  <th>Thru</th>
+                  <th>R1</th>
+                  <th>R2</th>
+                  <th>R3</th>
+                  <th>R4</th>
+                  <th>Total</th>
+                  <th>Team</th>
+                </tr>
+              </thead>
+              <tbody id="scores-list"></tbody>
+            </table>
+          </div>
         </section>
       </main>
     </div>
@@ -650,6 +722,7 @@
     let draftState = null;
 
     const fieldSearchInput = document.getElementById("field-search");
+    const scoresSearchInput = document.getElementById("scores-search");
 
     document.getElementById("login-btn").addEventListener("click", async () => {
       const pin = document.getElementById("pin").value;
@@ -685,6 +758,33 @@
         document.getElementById(btn.dataset.tab).style.display = "block";
       });
     });
+
+    function lastNameKey(name) {
+      if (!name) return "";
+
+      const suffixes = ["jr", "sr", "ii", "iii", "iv"];
+      const parts = String(name)
+        .replace(/[.,']/g, "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter((part) => !suffixes.includes(part.toLowerCase()));
+
+      if (parts.length === 0) return "";
+
+      const last = parts[parts.length - 1].toLowerCase();
+      const first = parts.slice(0, -1).join(" ").toLowerCase();
+
+      return `${last}-${first}`;
+    }
+
+    function sortGolfersByLastName(golfers) {
+      return [...golfers].sort((a, b) => {
+        const aName = typeof a === "string" ? a : a.name;
+        const bName = typeof b === "string" ? b : b.name;
+        return lastNameKey(aName).localeCompare(lastNameKey(bName));
+      });
+    }
 
     function normalizeName(name) {
       if (!name) return "";
@@ -776,6 +876,59 @@
       return parsed;
     }
 
+    function getRowValue(row, possibleNames) {
+      const lowered = {};
+
+      Object.keys(row).forEach((key) => {
+        lowered[key.toLowerCase().trim()] = row[key];
+      });
+
+      for (const key of possibleNames) {
+        const value = lowered[key.toLowerCase()];
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return String(value).trim();
+        }
+      }
+
+      return "";
+    }
+
+    function scoreClass(value) {
+      const raw = String(value || "").trim();
+
+      if (!raw || raw === "--") return "muted-cell";
+      if (raw.startsWith("-")) return "score-good";
+      if (raw.startsWith("+")) return "score-bad";
+      if (raw === "E" || raw === "0") return "odds";
+
+      const num = Number(raw);
+      if (!Number.isNaN(num)) {
+        if (num < 0) return "score-good";
+        if (num > 0) return "score-bad";
+      }
+
+      return "odds";
+    }
+
+    function parseScoreNumber(value) {
+      const raw = String(value || "").trim();
+
+      if (!raw || raw === "--") return null;
+      if (raw.toUpperCase() === "E") return 0;
+
+      const cleaned = raw.replace("+", "");
+      const num = Number(cleaned);
+
+      return Number.isNaN(num) ? null : num;
+    }
+
+    function getPlayerTeam(playerId) {
+      if (!draftState?.picks) return "";
+
+      const pick = draftState.picks.find((p) => p.playerId === playerId);
+      return pick ? pick.team : "";
+    }
+
     document.getElementById("csv-input").addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -807,7 +960,14 @@
               top10Odds: "",
               bestFinish: "",
               top10s: "",
-              notes: ""
+              notes: "",
+              position: "",
+              thru: "",
+              r1: "",
+              r2: "",
+              r3: "",
+              r4: "",
+              totalScore: ""
             });
           }
 
@@ -874,7 +1034,63 @@
       document.getElementById("odds-status").textContent = "";
     });
 
+    document.getElementById("scores-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          const rows = results.data;
+          let matched = 0;
+          let missed = 0;
+          const missedNames = [];
+
+          const fieldByNormalizedName = new Map();
+          currentField.forEach((golfer) => {
+            fieldByNormalizedName.set(normalizeName(golfer.name), golfer);
+          });
+
+          for (const row of rows) {
+            const name = getRowValue(row, ["Name", "Player", "Golfer"]);
+            if (!name) continue;
+
+            const matchedGolfer = fieldByNormalizedName.get(normalizeName(name));
+
+            if (!matchedGolfer) {
+              missed++;
+              missedNames.push(name);
+              continue;
+            }
+
+            await updateDoc(doc(fieldCollection, matchedGolfer.id), {
+              position: getRowValue(row, ["Position", "Pos", "Place"]),
+              thru: getRowValue(row, ["Thru", "Through", "Holes"]),
+              r1: getRowValue(row, ["R1", "Round 1", "Round1"]),
+              r2: getRowValue(row, ["R2", "Round 2", "Round2"]),
+              r3: getRowValue(row, ["R3", "Round 3", "Round3"]),
+              r4: getRowValue(row, ["R4", "Round 4", "Round4"]),
+              totalScore: getRowValue(row, ["Total", "Score", "To Par", "Total Score"])
+            });
+
+            matched++;
+          }
+
+          let message = `✅ Scores uploaded. Matched ${matched}. Missed ${missed}.`;
+
+          if (missedNames.length) {
+            message += ` Missed: ${missedNames.slice(0, 8).join(", ")}`;
+            if (missedNames.length > 8) message += `, and ${missedNames.length - 8} more`;
+          }
+
+          document.getElementById("scores-status").textContent = message;
+        }
+      });
+    });
+
     fieldSearchInput.addEventListener("input", renderFieldTable);
+    scoresSearchInput.addEventListener("input", renderScoresTable);
 
     function listenToField() {
       onSnapshot(fieldCollection, (snapshot) => {
@@ -889,14 +1105,22 @@
             top10Odds: docSnap.data().top10Odds || "",
             bestFinish: docSnap.data().bestFinish || "",
             top10s: docSnap.data().top10s || "",
-            notes: docSnap.data().notes || ""
+            notes: docSnap.data().notes || "",
+            position: docSnap.data().position || "",
+            thru: docSnap.data().thru || "",
+            r1: docSnap.data().r1 || "",
+            r2: docSnap.data().r2 || "",
+            r3: docSnap.data().r3 || "",
+            r4: docSnap.data().r4 || "",
+            totalScore: docSnap.data().totalScore || ""
           });
         });
 
-        currentField.sort((a, b) => a.name.localeCompare(b.name));
+        currentField = sortGolfersByLastName(currentField);
 
         renderFieldTable();
         renderDraftBoard();
+        renderScoresTable();
       });
     }
 
@@ -905,9 +1129,9 @@
       const search = fieldSearchInput.value.toLowerCase();
       const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
 
-      const filtered = currentField.filter((g) =>
+      const filtered = sortGolfersByLastName(currentField.filter((g) =>
         g.name.toLowerCase().includes(search)
-      );
+      ));
 
       list.innerHTML = "";
 
@@ -936,6 +1160,42 @@
       updateStats();
     }
 
+    function renderScoresTable() {
+      const list = document.getElementById("scores-list");
+      const search = scoresSearchInput.value.toLowerCase();
+
+      const filtered = sortGolfersByLastName(currentField.filter((g) =>
+        g.name.toLowerCase().includes(search)
+      ));
+
+      list.innerHTML = "";
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<tr><td colspan="9" class="muted-cell">No scores found.</td></tr>`;
+      }
+
+      filtered.forEach((g) => {
+        const team = getPlayerTeam(g.id);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="golfer-name">${g.name}</td>
+          <td>${g.position || '<span class="muted-cell">--</span>'}</td>
+          <td>${g.thru || '<span class="muted-cell">--</span>'}</td>
+          <td>${g.r1 || '<span class="muted-cell">--</span>'}</td>
+          <td>${g.r2 || '<span class="muted-cell">--</span>'}</td>
+          <td>${g.r3 || '<span class="muted-cell">--</span>'}</td>
+          <td>${g.r4 || '<span class="muted-cell">--</span>'}</td>
+          <td class="${scoreClass(g.totalScore)}">${g.totalScore || "--"}</td>
+          <td>${team ? `<span class="rank-badge">${team}</span>` : '<span class="muted-cell">Undrafted</span>'}</td>
+        `;
+
+        list.appendChild(tr);
+      });
+
+      updateScoreStats();
+    }
+
     function updateStats() {
       const pickedIds = draftState?.picks ? new Set(draftState.picks.map((p) => p.playerId)) : new Set();
 
@@ -947,6 +1207,46 @@
       document.getElementById("odds-count").textContent = oddsCount;
       document.getElementById("drafted-count").textContent = drafted;
       document.getElementById("available-count").textContent = total - drafted;
+    }
+
+    function updateScoreStats() {
+      const scored = currentField.filter((g) => g.totalScore);
+
+      document.getElementById("score-rows-count").textContent = scored.length;
+
+      if (!draftState?.picks?.length) {
+        document.getElementById("team-a-score").textContent = "--";
+        document.getElementById("team-b-score").textContent = "--";
+        document.getElementById("score-leader").textContent = "--";
+        return;
+      }
+
+      const teamScores = {};
+
+      draftState.picks.forEach((pick) => {
+        const golfer = currentField.find((g) => g.id === pick.playerId);
+        const score = golfer ? parseScoreNumber(golfer.totalScore) : null;
+
+        if (!teamScores[pick.team]) teamScores[pick.team] = 0;
+        if (score !== null) teamScores[pick.team] += score;
+      });
+
+      const teamA = draftState.teamA || "Team A";
+      const teamB = draftState.teamB || "Team B";
+
+      const teamAScore = teamScores[teamA] ?? 0;
+      const teamBScore = teamScores[teamB] ?? 0;
+
+      document.getElementById("team-a-score").textContent = teamAScore > 0 ? `+${teamAScore}` : String(teamAScore);
+      document.getElementById("team-b-score").textContent = teamBScore > 0 ? `+${teamBScore}` : String(teamBScore);
+
+      if (teamAScore < teamBScore) {
+        document.getElementById("score-leader").textContent = teamA;
+      } else if (teamBScore < teamAScore) {
+        document.getElementById("score-leader").textContent = teamB;
+      } else {
+        document.getElementById("score-leader").textContent = "Tied";
+      }
     }
 
     document.getElementById("start-draft-btn").addEventListener("click", async () => {
@@ -977,6 +1277,7 @@
         draftState = docSnap.exists() ? docSnap.data() : { status: "setup" };
         renderFieldTable();
         renderDraftBoard();
+        renderScoresTable();
       });
     }
 
@@ -1029,6 +1330,7 @@
         boardDiv.style.display = "none";
         completeDiv.style.display = "none";
         updateStats();
+        updateScoreStats();
         return;
       }
 
@@ -1043,11 +1345,11 @@
         completeDiv.style.display = "block";
       } else {
         completeDiv.style.display = "none";
-        turnEl.textContent = `👉 ${picker}'s turn to pick`;
+        turnEl.textContent = `👉 ${picker}'s turn`;
       }
 
       const pickedIds = new Set(draftState.picks.map((p) => p.playerId));
-      const available = currentField.filter((g) => !pickedIds.has(g.id));
+      const available = sortGolfersByLastName(currentField.filter((g) => !pickedIds.has(g.id)));
 
       const availableList = document.getElementById("available-list");
       availableList.innerHTML = "";
@@ -1056,9 +1358,7 @@
         const li = document.createElement("li");
         const btn = document.createElement("button");
 
-        btn.textContent = g.winOdds
-          ? `Draft ${g.name} (${g.winOdds})`
-          : `Draft ${g.name}`;
+        btn.textContent = g.winOdds ? `${g.name} (${g.winOdds})` : g.name;
 
         btn.disabled = !picker;
         btn.addEventListener("click", () => draftGolfer(g));
@@ -1076,15 +1376,23 @@
       rosterA.innerHTML = "";
       rosterB.innerHTML = "";
 
-      draftState.picks.forEach((p, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${index + 1}. ${p.playerName}`;
+      const teamAPicks = sortGolfersByLastName(draftState.picks.filter((p) => p.team === draftState.teamA).map((p) => p.playerName));
+      const teamBPicks = sortGolfersByLastName(draftState.picks.filter((p) => p.team === draftState.teamB).map((p) => p.playerName));
 
-        if (p.team === draftState.teamA) rosterA.appendChild(li);
-        else rosterB.appendChild(li);
+      teamAPicks.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        rosterA.appendChild(li);
+      });
+
+      teamBPicks.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        rosterB.appendChild(li);
       });
 
       updateStats();
+      updateScoreStats();
     }
   </script>
 </body>
