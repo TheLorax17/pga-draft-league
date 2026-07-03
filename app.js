@@ -629,6 +629,7 @@ async function refreshScores() {
     const drafted = currentField.filter((g) => getPickedIds().has(g.id) && g.playerId);
 
     let refreshed = 0;
+    let scorecardMisses = 0;
 
     for (const golfer of drafted) {
       const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
@@ -638,10 +639,27 @@ async function refreshScores() {
 
       for (const r of row.rounds || []) {
         const roundId = r.roundId;
+        if (!roundId) continue;
         if (holesByRound[roundId]?.complete) continue;
 
-        const cardResp = await golfApiFetch("scorecard", { orgId, tournId, year, playerId: golfer.playerId, roundId });
-        const card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
+        let card;
+
+        try {
+          const cardResp = await golfApiFetch("scorecard", {
+            orgId,
+            tournId,
+            year,
+            playerId: golfer.playerId,
+            roundId
+          });
+
+          card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
+        } catch (err) {
+          console.warn(`Scorecard failed for ${golfer.name}, round ${roundId}`, err);
+          scorecardMisses++;
+          continue;
+        }
+
         const holesObj = card?.holes || {};
         const holes = [];
         let roundPoints = 0;
@@ -651,34 +669,46 @@ async function refreshScores() {
           const par = Number(hd.par ?? coursePar[h - 1] ?? defaultPar[h - 1]);
           const strokes = hd.holeScore ?? hd.score ?? null;
           const pts = strokes != null ? holePoints(Number(strokes), par) : 0;
+
           roundPoints += pts;
           holes.push({ holeScore: strokes, par });
         }
 
-        holesByRound[roundId] = { holes, roundPoints, complete: !!card?.roundComplete };
+        holesByRound[roundId] = {
+          holes,
+          roundPoints,
+          complete: !!card?.roundComplete
+        };
       }
 
-      const totalHolePoints = Object.values(holesByRound).reduce((sum, round) => sum + (round.roundPoints || 0), 0);
+      const totalHolePoints = Object.values(holesByRound).reduce(
+        (sum, round) => sum + (round.roundPoints || 0),
+        0
+      );
+
       const finPts = finishPoints(row.position);
+      const totalPoints = totalHolePoints + finPts;
 
       await updateDoc(doc(fieldCollection, golfer.id), {
         position: row.position || "",
         thru: row.thru || "",
         totalScore: row.total || row.totalScore || row.scoreToPar || "",
-        r1: row.rounds?.find((r) => r.roundId === 1)?.scoreToPar || "",
-        r2: row.rounds?.find((r) => r.roundId === 2)?.scoreToPar || "",
-        r3: row.rounds?.find((r) => r.roundId === 3)?.scoreToPar || "",
-        r4: row.rounds?.find((r) => r.roundId === 4)?.scoreToPar || "",
+        r1: row.rounds?.find((r) => Number(r.roundId) === 1)?.scoreToPar || "",
+        r2: row.rounds?.find((r) => Number(r.roundId) === 2)?.scoreToPar || "",
+        r3: row.rounds?.find((r) => Number(r.roundId) === 3)?.scoreToPar || "",
+        r4: row.rounds?.find((r) => Number(r.roundId) === 4)?.scoreToPar || "",
         holesByRound,
         totalHolePoints,
         finishPoints: finPts,
-        totalPoints: totalHolePoints + finPts
+        totalPoints
       });
 
       refreshed++;
     }
 
-    $("scores-status").textContent = `Refreshed ${refreshed} drafted golfers.`;
+    $("scores-status").textContent = scorecardMisses
+      ? `Refreshed ${refreshed} drafted golfers. ${scorecardMisses} scorecards were skipped.`
+      : `Refreshed ${refreshed} drafted golfers.`;
   } catch (err) {
     $("scores-status").textContent = `❌ ${err.message}`;
   }
