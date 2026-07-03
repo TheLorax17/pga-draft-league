@@ -658,6 +658,7 @@ async function refreshScores() {
 
     let refreshed = 0;
     let scorecardMisses = 0;
+    let firstScorecardError = "";
 
     for (const golfer of drafted) {
       const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
@@ -684,6 +685,7 @@ async function refreshScores() {
           card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
         } catch (err) {
           console.warn(`Scorecard failed for ${golfer.name}, round ${roundId}`, err);
+          if (!firstScorecardError) firstScorecardError = `${golfer.name} R${roundId}: ${err.message}`;
           scorecardMisses++;
           continue;
         }
@@ -735,7 +737,7 @@ async function refreshScores() {
     }
 
     $("scores-status").textContent = scorecardMisses
-      ? `Refreshed ${refreshed} drafted golfers. ${scorecardMisses} scorecards were skipped.`
+      ? `Refreshed ${refreshed} drafted golfers. ${scorecardMisses} scorecards were skipped. First error: ${firstScorecardError}`
       : `Refreshed ${refreshed} drafted golfers.`;
   } catch (err) {
     $("scores-status").textContent = `❌ ${err.message}`;
