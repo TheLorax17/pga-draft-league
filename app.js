@@ -513,6 +513,24 @@ async function confirmPick() {
   closeConfirm();
 }
 
+function unwrapMongoJSON(value) {
+  if (Array.isArray(value)) return value.map(unwrapMongoJSON);
+
+  if (value && typeof value === "object") {
+    if ("$numberInt" in value) return parseInt(value.$numberInt, 10);
+    if ("$numberLong" in value) return parseInt(value.$numberLong, 10);
+    if ("$numberDouble" in value) return parseFloat(value.$numberDouble);
+    if ("$date" in value) return unwrapMongoJSON(value.$date);
+    if ("$oid" in value) return value.$oid;
+
+    const out = {};
+    for (const key of Object.keys(value)) out[key] = unwrapMongoJSON(value[key]);
+    return out;
+  }
+
+  return value;
+}
+
 async function golfApiFetch(path, params) {
   if (!RAPIDAPI_KEY || RAPIDAPI_KEY.includes("PASTE_")) {
     throw new Error("Add your RapidAPI key in app.js first.");
@@ -524,7 +542,8 @@ async function golfApiFetch(path, params) {
   });
 
   if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
-  return res.json();
+  const json = await res.json();
+  return unwrapMongoJSON(json);
 }
 
 function eventName(event) {
@@ -585,7 +604,6 @@ async function linkTournament() {
 
   try {
     const data = await golfApiFetch("tournament", { orgId: "1", tournId, year });
-    console.log("RAW TOURNAMENT RESPONSE:", JSON.stringify(data, null, 2));
     const course = data.courses?.[0];
     const coursePar = course?.holes?.map((h) => parseInt(h.par, 10)) || defaultPar;
 
