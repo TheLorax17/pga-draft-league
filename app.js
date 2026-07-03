@@ -637,6 +637,9 @@ async function linkTournament() {
 }
 
 async function refreshScores() {
+  const btns = [$("refresh-scores-btn"), $("refresh-all-btn")];
+  if (btns[0]?.disabled) return; // already refreshing / on cooldown
+
   if (!draftState?.picks?.length) {
     $("scores-status").textContent = "Draft golfers first.";
     return;
@@ -650,6 +653,7 @@ async function refreshScores() {
 
   const { orgId, tournId, year, coursePar = defaultPar } = metaSnap.data();
   $("scores-status").textContent = "Refreshing drafted golfers...";
+  btns.forEach((b) => { if (b) b.disabled = true; });
 
   try {
     const leaderboard = await golfApiFetch("leaderboard", { orgId, tournId, year });
@@ -669,7 +673,14 @@ async function refreshScores() {
       for (const r of row.rounds || []) {
         const roundId = r.roundId;
         if (!roundId) continue;
-        if (holesByRound[roundId]?.complete) continue;
+
+        const existing = holesByRound[roundId];
+        if (existing?.complete) continue;
+
+        // Skip the call entirely if this golfer hasn't moved since the last
+        // successful fetch — saves API calls when nothing has changed yet.
+        const thruNow = r.thru ?? row.thru ?? "";
+        if (existing && existing.lastThru === thruNow && thruNow !== "") continue;
 
         let card;
 
@@ -707,7 +718,8 @@ async function refreshScores() {
         holesByRound[roundId] = {
           holes,
           roundPoints,
-          complete: !!card?.roundComplete
+          complete: !!card?.roundComplete,
+          lastThru: thruNow
         };
       }
 
@@ -741,6 +753,8 @@ async function refreshScores() {
       : `Refreshed ${refreshed} drafted golfers.`;
   } catch (err) {
     $("scores-status").textContent = `❌ ${err.message}`;
+  } finally {
+    setTimeout(() => { btns.forEach((b) => { if (b) b.disabled = false; }); }, 30000);
   }
 }
 
