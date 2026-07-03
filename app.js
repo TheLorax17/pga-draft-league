@@ -86,6 +86,7 @@ $("load-schedule-btn").addEventListener("click", loadSchedule);
 $("link-tournament-btn").addEventListener("click", linkTournament);
 $("refresh-scores-btn").addEventListener("click", refreshScores);
 $("refresh-all-btn").addEventListener("click", refreshScores);
+$("round-csv").addEventListener("change", uploadRoundScores);
 
 $("close-scorecard-btn").addEventListener("click", closeScorecard);
 $("scorecard-modal").addEventListener("click", (e) => { if (e.target.id === "scorecard-modal") closeScorecard(); });
@@ -651,78 +652,26 @@ async function refreshScores() {
     return;
   }
 
-  const { orgId, tournId, year, coursePar = defaultPar } = metaSnap.data();
+  const { orgId, tournId, year } = metaSnap.data();
   $("scores-status").textContent = "Refreshing drafted golfers...";
   btns.forEach((b) => { if (b) b.disabled = true; });
 
   try {
+    // Only the leaderboard call — this is cheap (1 call total) and gives us
+    // position, thru, and overall score. Hole-by-hole scoring comes from the
+    // CSV uploads instead, so we never touch the per-golfer scorecard endpoint.
     const leaderboard = await golfApiFetch("leaderboard", { orgId, tournId, year });
     const rows = leaderboard.leaderboardRows || leaderboard.rows || [];
     const drafted = currentField.filter((g) => getPickedIds().has(g.id) && g.playerId);
 
     let refreshed = 0;
-    let scorecardMisses = 0;
-    let firstScorecardError = "";
 
     for (const golfer of drafted) {
       const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
       if (!row) continue;
 
+      // Don't touch holesByRound here — that's owned by the CSV upload now.
       const holesByRound = golfer.holesByRound || {};
-
-      for (const r of row.rounds || []) {
-        const roundId = r.roundId;
-        if (!roundId) continue;
-
-        const existing = holesByRound[roundId];
-        if (existing?.complete) continue;
-
-        // Skip the call entirely if this golfer hasn't moved since the last
-        // successful fetch — saves API calls when nothing has changed yet.
-        const thruNow = r.thru ?? row.thru ?? "";
-        if (existing && existing.lastThru === thruNow && thruNow !== "") continue;
-
-        let card;
-
-        try {
-          const cardResp = await golfApiFetch("scorecard", {
-            orgId,
-            tournId,
-            year,
-            playerId: golfer.playerId,
-            roundId
-          });
-
-          card = Array.isArray(cardResp) ? cardResp[0] : cardResp;
-        } catch (err) {
-          console.warn(`Scorecard failed for ${golfer.name}, round ${roundId}`, err);
-          if (!firstScorecardError) firstScorecardError = `${golfer.name} R${roundId}: ${err.message}`;
-          scorecardMisses++;
-          continue;
-        }
-
-        const holesObj = card?.holes || {};
-        const holes = [];
-        let roundPoints = 0;
-
-        for (let h = 1; h <= 18; h++) {
-          const hd = holesObj[String(h)] || {};
-          const par = Number(hd.par ?? coursePar[h - 1] ?? defaultPar[h - 1]);
-          const strokes = hd.holeScore ?? hd.score ?? null;
-          const pts = strokes != null ? holePoints(Number(strokes), par) : 0;
-
-          roundPoints += pts;
-          holes.push({ holeScore: strokes, par });
-        }
-
-        holesByRound[roundId] = {
-          holes,
-          roundPoints,
-          complete: !!card?.roundComplete,
-          lastThru: thruNow
-        };
-      }
-
       const totalHolePoints = Object.values(holesByRound).reduce(
         (sum, round) => sum + (round.roundPoints || 0),
         0
@@ -735,11 +684,6 @@ async function refreshScores() {
         position: row.position || "",
         thru: row.thru || "",
         totalScore: row.total || row.totalScore || row.scoreToPar || "",
-        r1: row.rounds?.find((r) => Number(r.roundId) === 1)?.scoreToPar || "",
-        r2: row.rounds?.find((r) => Number(r.roundId) === 2)?.scoreToPar || "",
-        r3: row.rounds?.find((r) => Number(r.roundId) === 3)?.scoreToPar || "",
-        r4: row.rounds?.find((r) => Number(r.roundId) === 4)?.scoreToPar || "",
-        holesByRound,
         totalHolePoints,
         finishPoints: finPts,
         totalPoints
@@ -748,14 +692,89 @@ async function refreshScores() {
       refreshed++;
     }
 
-    $("scores-status").textContent = scorecardMisses
-      ? `Refreshed ${refreshed} drafted golfers. ${scorecardMisses} scorecards were skipped. First error: ${firstScorecardError}`
-      : `Refreshed ${refreshed} drafted golfers.`;
+    $("scores-status").textContent = `Refreshed ${refreshed} drafted golfers.`;
   } catch (err) {
     $("scores-status").textContent = `❌ ${err.message}`;
   } finally {
     setTimeout(() => { btns.forEach((b) => { if (b) b.disabled = false; }); }, 30000);
   }
+}
+
+async function uploadRoundScores(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const roundId = Number($("round-csv-select").value);
+  const statusEl = $("round-csv-status");
+  statusEl.textContent = "Reading CSV...";
+
+  const metaSnap = await getDoc(tournamentMetaRef);
+  const coursePar = metaSnap.exists() ? (metaSnap.data().coursePar || defaultPar) : defaultPar;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: async (results) => {
+      const byName = new Map(currentField.map((g) => [normalizeName(g.name), g]));
+      let matched = 0;
+      let missed = 0;
+
+      for (const row of results.data) {
+        const rawName = row.Golfer || row.golfer || row.Name || row.name || "";
+        const golfer = byName.get(normalizeName(rawName));
+        if (!golfer) {
+          if (rawName.trim()) missed++;
+          continue;
+        }
+
+        const holes = [];
+        let roundPoints = 0;
+        let holesPlayed = 0;
+
+        for (let h = 1; h <= 18; h++) {
+          const raw = row[String(h)];
+          const par = Number(coursePar[h - 1] ?? defaultPar[h - 1]);
+          const strokes = raw === undefined || raw === null || String(raw).trim() === "" ? null : Number(raw);
+          const pts = strokes != null && !Number.isNaN(strokes) ? holePoints(strokes, par) : 0;
+
+          if (strokes != null && !Number.isNaN(strokes)) holesPlayed++;
+          roundPoints += pts;
+          holes.push({ holeScore: Number.isNaN(strokes) ? null : strokes, par });
+        }
+
+        const holesByRound = golfer.holesByRound || {};
+        holesByRound[roundId] = { holes, roundPoints, complete: holesPlayed === 18 };
+
+        const totalHolePoints = Object.values(holesByRound).reduce(
+          (sum, round) => sum + (round.roundPoints || 0),
+          0
+        );
+
+        const finPts = finishPoints(golfer.position);
+        const totalPoints = totalHolePoints + finPts;
+
+        const scoreToPar = holesPlayed
+          ? holes.reduce((sum, h) => sum + (h.holeScore != null ? h.holeScore - h.par : 0), 0)
+          : null;
+
+        await updateDoc(doc(fieldCollection, golfer.id), {
+          holesByRound,
+          totalHolePoints,
+          finishPoints: finPts,
+          totalPoints,
+          [`r${roundId}`]: scoreToPar != null ? formatScore(scoreToPar) : ""
+        });
+
+        matched++;
+      }
+
+      statusEl.textContent = `Round ${roundId}: updated ${matched} golfers. ${missed ? `${missed} names didn't match.` : ""}`;
+      $("round-csv").value = "";
+    },
+    error: (err) => {
+      statusEl.textContent = `❌ ${err.message}`;
+    }
+  });
 }
 
 function renderScoresTable() {
