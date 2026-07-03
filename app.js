@@ -194,6 +194,25 @@ function finishPoints(position) {
   return 0;
 }
 
+function roundScore(row, roundNumber) {
+  const round = (row.rounds || []).find((r) =>
+    Number(r.roundId) === roundNumber ||
+    Number(r.roundNumber) === roundNumber ||
+    Number(r.round) === roundNumber
+  );
+
+  if (!round) return "";
+
+  return (
+    round.scoreToPar ??
+    round.toPar ??
+    round.totalToPar ??
+    round.roundScore ??
+    round.score ??
+    ""
+  );
+}
+
 function sortValue(golfer, key) {
   if (key === "name") return lastNameKey(golfer.name);
   if (["winOdds", "top5Odds", "top10Odds"].includes(key)) return parseOdds(golfer[key]);
@@ -635,6 +654,9 @@ async function refreshScores() {
       const row = rows.find((r) => String(r.playerId) === String(golfer.playerId));
       if (!row) continue;
 
+	console.log(row);
+	break;
+
       const holesByRound = golfer.holesByRound || {};
 
       for (const r of row.rounds || []) {
@@ -693,10 +715,10 @@ async function refreshScores() {
         position: row.position || "",
         thru: row.thru || "",
         totalScore: row.total || row.totalScore || row.scoreToPar || "",
-        r1: row.rounds?.find((r) => Number(r.roundId) === 1)?.scoreToPar || "",
-        r2: row.rounds?.find((r) => Number(r.roundId) === 2)?.scoreToPar || "",
-        r3: row.rounds?.find((r) => Number(r.roundId) === 3)?.scoreToPar || "",
-        r4: row.rounds?.find((r) => Number(r.roundId) === 4)?.scoreToPar || "",
+        r1: roundScore(row, 1),
+	r2: roundScore(row, 2),
+	r3: roundScore(row, 3),
+	r4: roundScore(row, 4),
         holesByRound,
         totalHolePoints,
         finishPoints: finPts,
