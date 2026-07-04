@@ -11,7 +11,7 @@ const fieldCollection = collection(db, "tournaments", "current", "field");
 const draftDocRef = doc(db, "draft", "current");
 const tournamentMetaRef = doc(db, "tournaments", "current");
 
-const defaultPar = [4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4];
+const defaultPar = [4,5,3,4,4,4,3,4,4,5,4,3,4,4,4,3,5,4];
 
 let currentField = [];
 let draftState = null;
@@ -87,6 +87,8 @@ $("link-tournament-btn").addEventListener("click", linkTournament);
 $("refresh-scores-btn").addEventListener("click", refreshScores);
 $("refresh-all-btn").addEventListener("click", refreshScores);
 $("round-csv").addEventListener("change", uploadRoundScores);
+$("apply-override-btn").addEventListener("click", applyRoundOverride);
+$("clear-override-btn").addEventListener("click", () => { $("override-text").value = ""; $("override-status").textContent = ""; });
 
 $("close-scorecard-btn").addEventListener("click", closeScorecard);
 $("scorecard-modal").addEventListener("click", (e) => { if (e.target.id === "scorecard-modal") closeScorecard(); });
@@ -775,6 +777,56 @@ async function uploadRoundScores(e) {
       statusEl.textContent = `❌ ${err.message}`;
     }
   });
+}
+
+function parseRoundOverrideText(text) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const parsed = [];
+
+  for (const line of lines) {
+    const match = line.match(/^(.+?)[\s,]+(\d{2,3})$/);
+    if (!match) continue;
+    parsed.push({ name: match[1].trim(), strokes: Number(match[2]) });
+  }
+
+  return parsed;
+}
+
+async function applyRoundOverride() {
+  const roundId = Number($("override-round-select").value);
+  const parsed = parseRoundOverrideText($("override-text").value);
+  const statusEl = $("override-status");
+
+  if (!parsed.length) {
+    statusEl.textContent = "No valid lines found. Use one per line: Name Strokes (e.g. Max Homa 64)";
+    return;
+  }
+
+  const metaSnap = await getDoc(tournamentMetaRef);
+  const coursePar = metaSnap.exists() ? (metaSnap.data().coursePar || defaultPar) : defaultPar;
+  const totalPar = coursePar.reduce((sum, p) => sum + Number(p), 0);
+
+  const byName = new Map(currentField.map((g) => [normalizeName(g.name), g]));
+  let matched = 0;
+  let missed = 0;
+
+  for (const item of parsed) {
+    const golfer = byName.get(normalizeName(item.name));
+    if (!golfer) {
+      missed++;
+      continue;
+    }
+
+    const scoreToPar = item.strokes - totalPar;
+
+    await updateDoc(doc(fieldCollection, golfer.id), {
+      [`r${roundId}`]: formatScore(scoreToPar)
+    });
+
+    matched++;
+  }
+
+  statusEl.textContent = `Round ${roundId}: set ${matched} golfers (course par ${totalPar}). ${missed ? `${missed} names didn't match.` : ""}`;
 }
 
 function renderScoresTable() {
