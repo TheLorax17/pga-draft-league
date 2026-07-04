@@ -616,3 +616,52 @@ tbody tr:hover { background: rgba(130,168,86,.08); }
     grid-template-columns: 1fr;
   }
 }
+
+.scoring-group {
+  margin-top: 16px;
+}
+
+.scoring-group:first-of-type {
+  margin-top: 4px;
+}
+
+.scoring-group-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+
+.scoring-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scoring-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #101711;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.scoring-chip span {
+  color: var(--text);
+}
+
+.scoring-chip strong {
+  font-size: 13px;
+}
+
+.scoring-chip.good strong { color: var(--green); }
+.scoring-chip.bad strong { color: #ff7b72; }
+.scoring-chip.amber strong { color: var(--amber); }
