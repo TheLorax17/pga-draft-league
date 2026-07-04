@@ -76,6 +76,7 @@ $("import-odds-btn").addEventListener("click", importOdds);
 $("clear-odds-btn").addEventListener("click", () => { $("odds-text").value = ""; $("field-status").textContent = ""; });
 $("field-search").addEventListener("input", renderFieldTable);
 $("scores-search").addEventListener("input", renderScoresTable);
+$("breakdown-search").addEventListener("input", renderBreakdownTable);
 
 $("start-draft-btn").addEventListener("click", startDraft);
 $("reset-draft-btn").addEventListener("click", resetDraft);
@@ -361,6 +362,7 @@ function renderAll() {
   renderFieldTable();
   renderDraftBoard();
   renderScoresTable();
+  renderBreakdownTable();
 }
 
 function getPickedIds() {
@@ -865,6 +867,34 @@ function renderScoresTable() {
   document.querySelectorAll("[data-scorecard]").forEach((cell) => {
     cell.addEventListener("click", () => openScorecard(currentField.find((g) => g.id === cell.dataset.scorecard)));
   });
+}
+
+function renderBreakdownTable() {
+  const q = $("breakdown-search")?.value.toLowerCase() || "";
+  const picked = getPickedIds();
+
+  const rows = currentField
+    .filter((g) => picked.has(g.id) && g.name.toLowerCase().includes(q))
+    .map((g) => {
+      const holesByRound = g.holesByRound || {};
+      const roundPts = [1, 2, 3, 4].map((r) => holesByRound[r]?.roundPoints ?? null);
+      const holePts = g.totalHolePoints ?? roundPts.reduce((sum, p) => sum + (p || 0), 0);
+      const finPts = g.finishPoints ?? finishPoints(g.position);
+      const total = g.totalPoints ?? (holePts + finPts);
+      return { golfer: g, roundPts, holePts, finPts, total };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  $("breakdown-body").innerHTML = rows.map(({ golfer, roundPts, holePts, finPts, total }) => `
+    <tr>
+      <td class="golfer-name">${golfer.name}</td>
+      <td><span class="status-chip">${getPlayerTeam(golfer.id)}</span></td>
+      ${roundPts.map((p) => `<td class="${p == null ? "muted" : p > 0 ? "good" : p < 0 ? "bad" : "amber"}">${p == null ? "--" : formatPoints(p)}</td>`).join("")}
+      <td class="${holePts > 0 ? "good" : holePts < 0 ? "bad" : "amber"}">${formatPoints(holePts)}</td>
+      <td class="${finPts > 0 ? "good" : "muted"}">${finPts ? formatPoints(finPts) : "--"}</td>
+      <td class="${total > 0 ? "good" : total < 0 ? "bad" : "amber"}">${formatPoints(total)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="9" class="muted">No drafted golfers yet.</td></tr>`;
 }
 
 function openScorecard(golfer) {
