@@ -503,3 +503,35 @@ tbody tr:hover { background: rgba(130,168,86,.08); }
     flex: 1;
   }
 }
+
+.score-shape {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.score-shape.shape-birdie {
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+.score-shape.shape-eagle {
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px currentColor;
+}
+
+.score-shape.shape-bogey {
+  border-radius: 3px;
+  border: 2px solid currentColor;
+}
+
+.score-shape.shape-dbogey {
+  border-radius: 3px;
+  border: 2px solid currentColor;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px currentColor;
+}
