@@ -886,15 +886,28 @@ function renderBreakdownTable() {
     .sort((a, b) => b.total - a.total);
 
   $("breakdown-body").innerHTML = rows.map(({ golfer, roundPts, holePts, finPts, total }) => `
-    <tr>
-      <td class="golfer-name">${golfer.name}</td>
-      <td><span class="status-chip">${getPlayerTeam(golfer.id)}</span></td>
-      ${roundPts.map((p) => `<td class="${p == null ? "muted" : p > 0 ? "good" : p < 0 ? "bad" : "amber"}">${p == null ? "--" : formatPoints(p)}</td>`).join("")}
-      <td class="${holePts > 0 ? "good" : holePts < 0 ? "bad" : "amber"}">${formatPoints(holePts)}</td>
-      <td class="${finPts > 0 ? "good" : "muted"}">${finPts ? formatPoints(finPts) : "--"}</td>
-      <td class="${total > 0 ? "good" : total < 0 ? "bad" : "amber"}">${formatPoints(total)}</td>
-    </tr>
-  `).join("") || `<tr><td colspan="9" class="muted">No drafted golfers yet.</td></tr>`;
+    <div class="breakdown-card">
+      <div class="breakdown-card-head">
+        <div>
+          <div class="golfer-name">${golfer.name}</div>
+          <span class="status-chip">${getPlayerTeam(golfer.id)}</span>
+        </div>
+        <div class="breakdown-total ${total > 0 ? "good" : total < 0 ? "bad" : "amber"}">${formatPoints(total)}</div>
+      </div>
+      <div class="breakdown-rounds">
+        ${roundPts.map((p, i) => `
+          <div class="breakdown-round">
+            <span class="breakdown-round-label">R${i + 1}</span>
+            <span class="${p == null ? "muted" : p > 0 ? "good" : p < 0 ? "bad" : "amber"}">${p == null ? "--" : formatPoints(p)}</span>
+          </div>
+        `).join("")}
+      </div>
+      <div class="breakdown-foot">
+        <span>Hole pts <strong class="${holePts > 0 ? "good" : holePts < 0 ? "bad" : "amber"}">${formatPoints(holePts)}</strong></span>
+        <span>Finish bonus <strong class="${finPts > 0 ? "good" : "muted"}">${finPts ? formatPoints(finPts) : "--"}</strong></span>
+      </div>
+    </div>
+  `).join("") || `<p class="muted">No drafted golfers yet.</p>`;
 }
 
 function openScorecard(golfer) {
