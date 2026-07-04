@@ -11,7 +11,7 @@ const fieldCollection = collection(db, "tournaments", "current", "field");
 const draftDocRef = doc(db, "draft", "current");
 const tournamentMetaRef = doc(db, "tournaments", "current");
 
-const defaultPar = [4,5,3,4,4,4,3,4,4,5,4,3,4,4,4,3,5,4];
+const defaultPar = [4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4];
 
 let currentField = [];
 let draftState = null;
@@ -893,6 +893,16 @@ function renderScorecard() {
   $("scorecard-content").innerHTML = renderNine(1, 9, holes) + renderNine(10, 18, holes);
 }
 
+function shapeClassFor(score, par) {
+  if (score == null || par == null) return "";
+  const diff = Number(score) - Number(par);
+  if (diff <= -2) return "shape-eagle";
+  if (diff === -1) return "shape-birdie";
+  if (diff === 1) return "shape-bogey";
+  if (diff >= 2) return "shape-dbogey";
+  return "";
+}
+
 function renderNine(start, end, holes) {
   const range = [];
   for (let h = start; h <= end; h++) range.push(h);
@@ -921,7 +931,9 @@ function renderNine(start, end, holes) {
               const score = hole.holeScore;
               const par = hole.par;
               const cls = score == null ? "muted" : Number(score) < Number(par) ? "good" : Number(score) > Number(par) ? "bad" : "amber";
-              return `<td class="${cls}">${score ?? "--"}</td>`;
+              const shape = shapeClassFor(score, par);
+              const inner = score ?? "--";
+              return `<td class="${cls}">${shape ? `<span class="score-shape ${shape}">${inner}</span>` : inner}</td>`;
             }).join("")}
             <td>${hasScores ? scoreTotal : "--"}</td>
           </tr>
