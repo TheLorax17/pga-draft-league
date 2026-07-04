@@ -535,3 +535,84 @@ tbody tr:hover { background: rgba(130,168,86,.08); }
   border: 2px solid currentColor;
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px currentColor;
 }
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.breakdown-card {
+  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.breakdown-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.breakdown-card-head .golfer-name {
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+
+.breakdown-total {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.breakdown-rounds {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.breakdown-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: #101711;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.breakdown-round-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.breakdown-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.breakdown-foot strong {
+  margin-left: 6px;
+  font-size: 14px;
+}
+
+@media (max-width: 850px) {
+  .breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
