@@ -56,6 +56,7 @@
       <button class="tab active" data-tab="field">Field</button>
       <button class="tab" data-tab="draft">Draft</button>
       <button class="tab" data-tab="scores">Scores</button>
+      <button class="tab" data-tab="breakdown">Breakdown</button>
     </nav>
 
     <main>
@@ -230,6 +231,45 @@
               </tr>
             </thead>
             <tbody id="scores-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="breakdown-tab" class="panel tab-panel hidden">
+        <div class="panel-header">
+          <div>
+            <h2>Scoring Breakdown</h2>
+            <p>How every golfer's points are actually adding up, round by round.</p>
+          </div>
+        </div>
+
+        <div class="odds-box">
+          <h3>How Scoring Works</h3>
+          <p><strong>Per hole (vs. par):</strong> Eagle or better +13 &nbsp;|&nbsp; Birdie +8 &nbsp;|&nbsp; Par 0 &nbsp;|&nbsp; Bogey −1 &nbsp;|&nbsp; Double bogey or worse −3</p>
+          <p><strong>Finish bonus (final position):</strong> 1st +30 &nbsp;|&nbsp; 2nd +20 &nbsp;|&nbsp; 3rd +18 &nbsp;|&nbsp; 4th +16 &nbsp;|&nbsp; 5th +14 &nbsp;|&nbsp; 6th +12 &nbsp;|&nbsp; 7th +10 &nbsp;|&nbsp; 8th +9 &nbsp;|&nbsp; 9th +8 &nbsp;|&nbsp; 10th +7 &nbsp;|&nbsp; 11-15 +6 &nbsp;|&nbsp; 16-20 +5 &nbsp;|&nbsp; 21-25 +4 &nbsp;|&nbsp; 26-30 +3 &nbsp;|&nbsp; 31-40 +2 &nbsp;|&nbsp; 41-50 +1</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="search" id="breakdown-search" placeholder="Search golfers..." />
+          <span class="pill">Sorted by total points</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Golfer</th>
+                <th>Team</th>
+                <th>R1 pts</th>
+                <th>R2 pts</th>
+                <th>R3 pts</th>
+                <th>R4 pts</th>
+                <th>Hole pts</th>
+                <th>Finish bonus</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-body"></tbody>
           </table>
         </div>
       </section>
