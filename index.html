@@ -189,6 +189,25 @@
           <p id="round-csv-status" class="status-text"></p>
         </div>
 
+        <div class="odds-box">
+          <h3>Round Score Override (Backup)</h3>
+          <p>Missing a round's box even though it's finished? Paste one golfer per line — name then their <strong>raw total strokes for the round</strong> (not score-to-par), e.g. <code>Max Homa 64</code>. The app converts it using this tournament's actual course par automatically. This won't affect fantasy points, just the round column display.</p>
+          <div class="api-controls">
+            <select id="override-round-select">
+              <option value="1">Round 1</option>
+              <option value="2">Round 2</option>
+              <option value="3">Round 3</option>
+              <option value="4">Round 4</option>
+            </select>
+          </div>
+          <textarea id="override-text" placeholder="Max Homa 64&#10;Ben Griffin 69&#10;Keegan Bradley 71"></textarea>
+          <div class="row-actions">
+            <button id="apply-override-btn">Apply Scores</button>
+            <button class="ghost-btn" id="clear-override-btn">Clear</button>
+          </div>
+          <p id="override-status" class="status-text"></p>
+        </div>
+
         <div class="toolbar">
           <input type="search" id="scores-search" placeholder="Search scores..." />
           <span class="pill">Leaderboard sorted by points</span>
