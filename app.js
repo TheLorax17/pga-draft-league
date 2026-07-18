@@ -11,7 +11,7 @@ const fieldCollection = collection(db, "tournaments", "current", "field");
 const draftDocRef = doc(db, "draft", "current");
 const tournamentMetaRef = doc(db, "tournaments", "current");
 
-const defaultPar = [5,4,3,4,3,4,5,4,3,4,4,5,4,4,3,4,3,4];
+const defaultPar = [4,4,4,3,4,4,3,4,4,4,4,3,4,3,5,4,5,4];
 
 let currentField = [];
 let draftState = null;
